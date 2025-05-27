@@ -1,0 +1,51 @@
+CONCEPT: Building an ICC Profile for Digitized Black-and-White Film
+
+This module will cover the end-to-end process of creating a custom ICC profile for converting scanned (digitized) B&W negatives to accurate positives, using ArgyllCMS tools and a patch-based profiling workflow.
+
+Steps to be documented in the final version:
+
+1. Patch Generation
+   - Generate evenly distributed grayscale or color patches with good optical legibility.
+   - Tools: `targen` with grayscale (`-d2 -l`) or color (`-d3 -e8`) mode.
+
+2. Pattern Rendering and Printing
+   - Render patches using `printtarg`, print onto photographic paper (baryta for B&W).
+   - Ensure consistent light and disable printer color corrections.
+
+3. Shooting the Printed Patches onto Film
+   - Backlight the print with one of 3 light sources (warm / neutral / cool).
+   - Re-photograph using a macro lens and full-frame sensor.
+   - Ensure parallelism and uniform illumination.
+
+4. Film Development and Negative Re-Scanning
+   - Develop using a consistent process (e.g. D-76, Microphen).
+   - Scan negatives (one shot per light type) to obtain `.tif` files.
+
+5. Measurement Extraction
+   - Use `scanin` to extract `.ti3` measurement data from each scanned TIFF.
+
+6. Merge Multiple Measurement Sets
+   - Combine all `.ti3` files into one (`combo.ti3`) manually or via script.
+   - Retain a single `BEGIN_DATA_FORMAT ... END_DATA_FORMAT` section and concatenate the rest.
+
+7. ICC Profile Generation
+   - Use `colprof` to generate the ICC profile (`neg2pos.icc`) from merged data.
+
+8. Applying the ICC Profile
+   - Install the ICC in your system profile directory.
+   - In Capture One or other editors:
+     - Assign the custom profile
+     - Use a linear tone curve
+     - Disable automatic color adjustments
+
+Updating for New Light Sources:
+   - Reshoot patches under the new light source.
+   - Extract new `.ti3`, append to `combo.ti3`, and regenerate ICC.
+
+Output Files (essential for the process):
+- `color_patch.ti1` – original patch layout
+- `color_patch.cht/cie` – chart geometry and reference values
+- `*.tif` – digitized film scans
+- `*.ti3` – extracted measurements
+- `combo.ti3` – merged dataset
+- `neg2pos.icc` – final working ICC profile

@@ -1,0 +1,11 @@
+PDF DRAWINGS — Technical Documentation for Agitator Module
+
+This folder contains printable technical documents related to the construction and wiring of the horizontal agitator system.
+
+1. Mechanical Inventory with Part Drawings  
+   - List of mechanical components with basic dimensional drawings.  
+   - Includes motor mount, bearing supports, frame plates, and enclosure panels.
+
+2. Wiring Diagrams  
+   - General power and controller wiring schematic.  
+   - Stepper motor wire color reference for correct phase alignment.

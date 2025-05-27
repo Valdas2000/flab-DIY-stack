@@ -1,0 +1,26 @@
+3D PRINTED PARTS — STL Files for Digitizing Stand Components
+
+This folder contains STL models of all custom-designed parts intended for 3D printing. The parts are grouped by functional subsystems.
+
+1. Linear Guide Adapter  
+   - Mounting interface to setup BEXIN Quick Release Clamp QR-70N on the linear rail
+
+2. Lobster Holder Glue-In Adapter  
+   - Intermediate part to setup Dust Wiper.
+
+3. Carrier Stopper  
+   - Mechanical end-stop for limiting carrier travel.
+
+4. Carrier Stopper Brake Shoe  
+   - Rubberized insert or pressure-fit component for damping movement.
+
+5. Light Holder — Left Hand Support  
+6. Light Holder — Right Hand Support  
+7. Light Holder Base&Console  
+8. Light Holder Slider  
+   - All components above form the adjustable assembly for mounting and aligning the backlight module.
+
+9. Dust Wiper Base  
+10. Dust Wiper Top  
+11. Dust Wiper Velvet Holder  
+   - Components forming the dust-removal unit positioned in front of the film path.

@@ -1,0 +1,85 @@
+# === Enable PDF and STL only for dedicated folders
+!/ru/**/pdf_*/**/*.pdf
+!/ru/**/stl_3d_models/**/*.stl
+
+!/en/**/pdf_*/**/*.pdf
+!/en/**/stl_3d_models/**/*.stl
+
+!/pl/**/pdf_*/**/*.pdf
+!/pl/**/stl_3d_models/**/*.stl
+
+# Keep all documentation
+!*.md
+!LICENSE*
+!README*
+
+# IDE specific & OS generated files
+.obsidian/
+.typora/
+.idea/
+.vscode/
+__pycache__/
+build/
+output/
+dist/
+env/
+venv/
+ENV/
+Claude_Contexts_Essentials/
+GPT_Contexts_Essentials/
+*.iml
+*.swp
+*.swo
+*.bak
+*.py[cod]
+*$py.class
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+.env
+.venv
+desktop.ini
+ehthumbs.db
+Thumbs.db
+
+# Disable workpace for draft text/images
+0_drafts/
+0_exp/
+exp/
+drafts/
+raw/
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+
+# Globally disabled file formats
+# No raw or  originals
+*.psd
+*.ai
+*.xcf
+*.blend
+*.skp
+*.3mf
+*.step
+*.iges
+*.dwg
+*.dxf
+
+# No PDF and STL by default (will be enabler for specific locations only
+*.pdf
+
+# === Enable only specific formats for illustrations (for now now raw formats to be keept)
+*.raw
+*.cr2
+*.nef
+*.arw
+*.dng
+!*.jpg
+!*.jpeg
+!*.png
+!*.webp
+!*.tiff

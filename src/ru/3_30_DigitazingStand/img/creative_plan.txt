@@ -1,0 +1,34 @@
+IMAGES — Reference Photos for Digitizing Stand Assembly
+
+This folder contains photo documentation of the key components and assembly stages of the digitizing stand.
+
+1. Assembled Overall Side View  
+   - Full side view of the complete stand in its upright position.
+
+2. Linear Guide with Camera Support  
+   - Detail of the linear rail and camera mounting bracket.
+
+3. Rear View: Linear Guide Vertical Adjustment  
+   - Backside view showing the vertical adjustment mechanism of the rail.
+
+4. Light Source Carrier with Mount  
+   - Photo of the light module carrier and its attachment method.
+
+5. Light Source Horizontal Rotation Mechanism  
+   - The hinge or pivot system allowing rotation of the light source.
+
+6. Light Source Carrier Stopper  
+   - The mechanical stop that limits travel of the light carrier.
+
+7. Dust Wiper Assembly  
+   - The full dust-removal mechanism as assembled.
+
+8. Lobster Holder with Dust Wiper Brackets  
+   - Combined mounting of film holder and dust wiper elements.
+
+9. Parallelism Fine Tuning  
+   - Close-up of mechanical adjustments used to achieve sensor/film plane alignment.
+
+10. Complete Setup View  
+    - Full working system including the stand, camera, updated Lobster holder, and active Dust Wiper.
+

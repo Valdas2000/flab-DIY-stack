@@ -1,0 +1,23 @@
+REVERSAL PROCESS — Overview and Methods
+
+1. General Overview of Reversal Processing
+   - Purpose and principles of converting negatives into positives for final use or presentation.
+
+1.1 Analog Reversal Methods
+   - Traditional darkroom printing on photographic paper
+   - Use of dedicated reversal films (slide films, direct positives)
+
+1.2 Digital Reversal Techniques
+   - Luma-based inversion in editors (manual curve flipping)
+   - Dedicated software for negative scanning and conversion
+   - ICC/LUT-based workflows (as used in ON1, Capture One, etc.)
+
+1.3 Common Challenges
+   - Color mask in color negative films (orange cast)
+   - Non-neutral film base in B&W films (e.g., blue or green tint)
+   - Handling density range and crossover issues
+
+1.4 Reshooting Techniques (Backlit Copying)
+   - Dealing with uneven illumination
+   - Lens flare and internal reflections
+   - Film flatness and focus alignment

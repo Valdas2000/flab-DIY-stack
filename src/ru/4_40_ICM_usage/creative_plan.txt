@@ -1,0 +1,19 @@
+ICC-Based Processing for Digitized Film Negatives (Capture One)
+
+This chapter covers the use of custom ICC camera profiles and 
+tethered workflows for film digitization in Capture One Pro (C1).
+
+1. Overview of Custom Camera Profile Features
+
+2. ICC-Based Film Inversion
+2.1 Adding a custom ICC profile for negative-to-positive conversion
+2.2 Using local custom ICC profiles for individual sessions
+2.3 Creating reusable ICC-based Styles
+2.4 Archiving, restoring, and distributing ICC-based Styles
+
+3. Tethered Shooting for Film Digitization
+3.1 Setting up tethering for scanning film with a digital camera
+3.2 Advanced tethering with camera setting presets
+3.3 Auto-applying ICC-based Styles during capture
+3.4 Managing tethered sessions (cataloging digitized negatives)
+

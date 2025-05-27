@@ -1,0 +1,15 @@
+LUT-Based Processing for Digitized Film Negatives
+
+1. Overview: Using LUTs in photo editing tools (Luminar Neo, ON1 Photo RAW)
+
+2. Workflow in Luminar Neo
+2.1 Applying LUTs for negative-to-positive inversion
+2.2 Adding custom LUTs
+2.3 Using a custom LUT in a non-destructive workflow
+2.4 Creating reusable LUT-based presets
+2.5 Archiving presets and LUTs for long-term storage
+
+3. Workflow in ON1 Photo RAW
+3.1 Importing LUTs into the Effects module
+3.2 Applying LUTs for film inversion
+3.3 Creating and saving custom LUT-based presets

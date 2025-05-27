@@ -1,0 +1,27 @@
+IMAGES — Assembly and Reference Photos for Agitator Module
+
+This folder contains step-by-step and reference photographs for the mechanical and electrical assembly of the horizontal agitator.
+
+1. Fully Assembled Agitator  
+   - External view of the complete system.
+
+2. Left Side — Wired View  
+   - Photo showing internal wiring, fuse, socket, and cooling fan on the left module.
+
+3. Motor and Bearing Support Setup  
+   - Close-up of stepper motor mount and adjustable bearing brackets.
+
+4. Frame Assembly with Left Side Installed  
+   - Structural view of assembled frame with full left-side setup.
+
+5. Wired Top Cover  
+   - Internal view of the top panel with controller and button wiring.
+
+6. Controller Setup  
+   - Views of control board installation, connectors, and switch layout.
+
+7. Agitator with 3-Spiral Tank (Short Type)  
+   - Operational view with a standard short tank mounted.
+
+8. Agitator with 5-Spiral Tank (Long Type)  
+   - Operational view with a long-format tank in place.

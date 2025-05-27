@@ -1,0 +1,35 @@
+DIGITIZING STAND — Refilming Setup for Film Scanning
+
+1. Overview: Concept of Digitizing (Refilming)
+   - General purpose and principles of using a camera-based scanning setup instead of flatbed scanners.
+
+1.2 Engineering Challenges
+   - Maintaining film-to-sensor parallelism
+   - Accurate positioning and stable focusing
+   - Film alignment and advancement
+   - Dust protection
+   - Eliminating camera shake and microvibrations
+
+1.3 Third-Party Components
+   - Film transport mechanisms (e.g. cassette carriers)
+   - Linear rails or guide systems
+   - Light source types and positioning
+   - Specialized tools (e.g. Lobster claw film holders)
+
+1.4 Main Structural Elements
+   - Frame and base platform
+   - Carrier mechanism
+   - Support legs and stabilizers
+   - Camera holder or sliding head
+
+1.5 Parts and Materials
+   - Full inventory reference
+   - Recommended sources for components
+
+1.6 3D-Printed Components
+   - List and descriptions of STL parts
+   - Design notes or customization options
+
+1.7 Assembly Instructions by Functional Blocks
+   - Step-by-step mechanical assembly guide
+   - Notes for calibration and alignment

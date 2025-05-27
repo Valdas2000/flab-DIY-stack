@@ -1,0 +1,7 @@
+PDF DRAWINGS — File Descriptions
+
+1. Bill of Materials (BOM)
+   A complete checklist of screws, bolts, nuts, profiles, and other basic components required to assemble the digitizing stand.
+
+2. Positioning Schematic
+   A simplified layout diagram showing the spatial arrangement of major structural blocks: linear rail, legs, camera mount, and platform. Not to scale — intended for general orientation only.

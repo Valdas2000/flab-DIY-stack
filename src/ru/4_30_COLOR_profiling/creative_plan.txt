@@ -1,0 +1,9 @@
+CONCEPT: ICC Profiling for Color Negative Film
+
+This module will be based on the finalized workflow from `4_20_BW_profiling`, with adaptations for color film.
+
+The overall concept is to expose approximately 1,000 color patches onto color negative film and use them 
+to create a custom camera profile for the color reversal process. This allows accurate ICC-based conversion 
+of scanned color negatives into linear positives with preserved hue and tonal balance.
+
+Further details will be added once the B&W profiling workflow is fully formalized and validated.

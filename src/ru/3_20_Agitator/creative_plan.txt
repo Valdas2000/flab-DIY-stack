@@ -1,0 +1,41 @@
+AGITATOR MODULE — Horizontal Film Development Machine
+
+This section documents the design, engineering considerations, and assembly instructions for a horizontal agitation machine for film development.
+
+1. Overview of Agitation Devices  
+   - Concept and purpose of horizontal agitation in film processing.
+   - Comparison with manual and rotary tank methods.
+
+2. Engineering Challenges  
+2.1 Electrical Safety in Wet Environments  
+   - Use of 14V low-voltage system  
+   - Inline fuse protection  
+2.2 Stepper Motor and Driver Cooling  
+   - Passive and active heat management  
+2.3 Variable Rotation Speed  
+   - Adjustability for different tank types and agitation modes  
+2.4 Development Uniformity  
+   - Preventing stagnation and chemical drift during rotation  
+2.5 No Soldering or Programming Required  
+   - Fully modular design with off-the-shelf components  
+2.6 Vibration and Noise Reduction  
+   - Structural and mounting strategies to suppress mechanical noise  
+
+3. Assembly Instructions  
+3.1 Mounting the Main Plate  
+   - Install the motor, bearings, and support brackets  
+3.2 Left-Side Assembly  
+   - Mount cooling fan, power socket, fuse, and internal wiring  
+3.3 Top Panel Assembly  
+   - Install control unit, power and fan switches, and route cables  
+3.4 Wheel and Guide Setup  
+   - Mount wheels, horizontal guide rails, and right-side wall  
+3.5 Installing Top Cover and Power Testing  
+   - Enclosure setup and initial safety check  
+3.6 Controller Configuration  
+   - Initial parameter tuning and rotation testing  
+3.7 Final Assembly  
+   - Attach tank holder, decorative moldings, anti-vibration feet  
+3.8 Usage Guidelines  
+   - Safe operation, loading, and cleaning procedures
+
