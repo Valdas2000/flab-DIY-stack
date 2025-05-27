@@ -6,17 +6,48 @@ This project documents the practical and chemical workflows behind DIY film deve
 modern materials and techniques, with a special focus on phenidone-based developers.
 
 It is built as a modular knowledge stack for advanced hobbyists and analog photographers, 
-providing end-to-end instructions, printable resources, 3D-printable lab components, 
-and calibration workflows.
+providing end-to-end instructions, printable resources, 3D-printable lab components, and calibration workflows.
 
-The project covers all aspects of black-and-white film processing — from in-house darkroom 
-setup (safety, chemical storage, labeling systems), through negative 
-development (recipes, technologies, reusable chemistry), to digitizing 
-equipment (drawings, estimates, 3D models, wiring, assembly), and finally to positive 
-processing (digitization and tonal inversion).
+The project covers all aspects of black-and-white film processing — from in-house darkroom setup (safety, 
+chemical storage, labeling systems), through negative development (recipes, processing techniques, 
+reusable chemistry), to digitizing equipment (drawings, estimates, STL models, wiring, assembly), 
+and finally to positive processing (digitization and tonal inversion).
 
+> The original content is written in Russian, with planned translations into English and Polish.
 
->The original content is written in Russian, with planned translations into English and Polish.
+---
+
+### Semi-Professional DIY Approach
+
+While this project is DIY-oriented, the organization and methodology align more closely 
+with those of a small professional lab. It features structured inventory management (including 
+internal indexing and cataloging of substances), best practices for storage (separating long-term 
+archival and short-term operational chemicals), and encapsulated preservation methods using inert gases. 
+These techniques elevate a home lab setup to a semi-professional standard, borrowing from the modern 
+practices of photo chemists and general laboratory technicians.
+
+Yes — it can be done at home, and these are the best practices known to contemporary analog workflow specialists.
+
+---
+
+### Educational Background and Motivation
+
+This open-source project is partly a response to questions from my former students who are asking me about analog photography.
+
+Over the years, I've collected and systematized answers to questions ranging from "Where do I begin?" 
+and "How do I do this properly?" to "What went wrong?" and "How can I improve this setup?". 
+These questions, and the desire to provide structured, reliable guidance, gave rise to this modular 
+resource covering lab construction and process organization.
+
+I hope that fellow educators and enthusiasts returning to analog photography will find this material 
+helpful—not only to reduce the time spent searching through scattered online sources, but also to provide 
+a solid and safe starting point for their creative journeys.
+
+This project reflects my ongoing effort to select the best available methods, tools, and workflows 
+that are practical, safe, and educationally appropriate for home and classroom use. 
+
+I'm happy to share my experience—feel free to build upon it, remix it, and make it your own.
+
 
 ---
 
