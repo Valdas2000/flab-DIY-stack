@@ -16,7 +16,7 @@
         Сб: 6:00–14:00
 
    Место сдачи: специальный пункт приёма опасных отходов на территории завода.
-   https://zut.com.pl/?utm_source=chatgpt.com
+   https://zut.com.pl
 
 2. Пункты Selektywnej Zbiórki Odpadów Komunalnych (PSZOK)
 
@@ -24,7 +24,7 @@
         PSZOK на ул. Elbląska 66 (район Rudniki)
         Планируется открытие нового пункта на ул. Meteorytowej (район Osowa).
    Принимают: разнообразные опасные отходы, включая фотохимию.
-   https://www.gdansk.pl/wiadomosci/Objazdowa-Zbiorka-Odpadow-Niebezpiecznych-rusza-kolejna-edycja%2Ca%2C281395?utm_source=chatgpt.com
+   https://www.gdansk.pl/wiadomosci
 
 ## Сопот
 al. Niepodległości 723A, Sopot (вход с ул. Poznańska)
@@ -35,7 +35,7 @@ al. Niepodległości 723A, Sopot (вход с ул. Poznańska)
     kzg.pl+1
 
   Для сдачи отходов необходимо предоставить документ, подтверждающий проживание в Сопоте, например, Карту Сопота или другой документ, подтверждающий право собственности на жильё.
-  https://ecosopot.pl/pszok/?utm_source=chatgpt.com
+  https://ecosopot.pl/pszok
 
 ## Гдыня
 1. PZON (Punkt Zbiórki Odpadów Niebezpiecznych)
@@ -50,8 +50,8 @@ al. Niepodległości 723A, Sopot (вход с ул. Poznańska)
         Часы работы: Вт и Чт: 14:00–17:00, Сб: 10:00–14:00
     Гдыня – Орлово: ul. Kasztanowa 4A
         Часы работы: Пн, Вт, Чт, Пт: 12:00–15:00
-   https://www.gdynia.pl/mieszkaniec/odpady%2C3667/odpady-niebezpieczne%2C365417?utm_source=chatgpt.com
-   https://kzg.pl/punkty-zbiorki-odpadow-niebezpiecznych/?utm_source=chatgpt.com
+   https://www.gdynia.pl/mieszkaniec
+   https://kzg.pl/punkty-zbiorki-odpadow-niebezpiecznych
 
 2. PSZOK "Eko Dolina"
 
@@ -59,8 +59,7 @@ al. Niepodległości 723A, Sopot (вход с ул. Poznańska)
    Часы работы: Пн–Пт: 6:00–18:00, Сб: 8:00–15:00
    Принимаются: различные виды отходов, включая опасные, такие как химикаты, краски, лаки, клеи и другие.
    Условия: Необходимо подтвердить проживание в Гдыне.
-   https://twojagdynia.pl/20241024619243/odpowiedzialna-gospodarka-odpadami-w-gdyni-jak-dziala-pszok?utm_source=chatgpt.com
-
+   https://twojagdynia.pl/20241024619243/odpowiedzialna-gospodarka-odpadami-w-gdyni-jak-dziala-pszok
 ## Румия
 В Румии функционируют два пункта приёма:
 1. PSZOK (Punkt Selektywnej Zbiórki Odpadów Komunalnych)
@@ -68,7 +67,7 @@ al. Niepodległości 723A, Sopot (вход с ул. Poznańska)
    Часы работы: Пн–Пт: 7:00–20:00, Сб: 7:00–15:00
    Принимаются: различные виды отходов, включая опасные, такие как химикаты, краски, лаки, клеи и другие.
    Условия: Необходимо предъявить документ, подтверждающий проживание в Румии.
-   https://rumia.eu/assets/uploads//other_files/pSEyRlnsNxkZ6fCOBQqLcImTPbMuo130r7zFWhtHUDGvXVe9YKi2J8jAw4gd.pdf?utm_source=chatgpt.com
+   https://rumia.eu/assets/uploads//other_files/pSEyRlnsNxkZ6fCOBQqLcImTPbMuo130r7zFWhtHUDGvXVe9YKi2J8jAw4gd.pdf
 
 2. PZON (Punkt Zbiórki Odpadów Niebezpiecznych)
    Адрес: ul. Dębogórska 148, Rumia

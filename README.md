@@ -74,7 +74,7 @@ Inside each language directory, content is structured by modules and stages of t
 │   ├───img
 │   ├───pdf_drawings
 │   └───stl_3d_models
-├───3_30_DigitazingStand   / # Repro stand for scanning negatives
+├───3_30_DigitizingStand   / # Repro stand for scanning negatives
 │   ├───img
 │   ├───pdf_drawings
 │   └───stl_3d_models
@@ -82,7 +82,7 @@ Inside each language directory, content is structured by modules and stages of t
 ├───4_20_BW_profiling      / # Create a profile for Reversal processing for B&W
 ├───4_30_COLOR_profiling   / # Create a profile for Reversal processing for Color films
 ├───4_40_Profile_usage     / # Profile-based Reversal processing
-└───4_50_LUT_usage         / # LUT-bases Reversal processing
+└───4_50_LUT_usage         / # LUT-based Reversal processing
 ```
 
 ---
