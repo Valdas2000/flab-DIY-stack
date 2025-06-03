@@ -1,4 +1,4 @@
-AGITATOR MODULE — Horizontal Film Development Machine
+AGITATOR MODULE Horizontal Film Development Machine
 
 This section documents the design, engineering considerations, and assembly instructions for a horizontal agitation machine for film development.
 
