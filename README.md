@@ -1,53 +1,52 @@
 # flab-DIY-stack
 
-**An open-source technical manual and toolkit for building a black-and-white film lab at home.**
+**Build a complete black-and-white film laboratory at home.**
 
-This project documents the practical and chemical workflows behind DIY film development using 
-modern materials and techniques, with a special focus on phenidone-based developers.
+This manual documents practical workflows for modern DIY film development.
+It emphasizes phenidone-based chemistry and reusable processes.
 
-It is built as a modular knowledge stack for advanced hobbyists and analog photographers, 
-providing end-to-end instructions, printable resources, 3D-printable lab components, and calibration workflows.
+The structure is modular. Each component serves a specific function:
+- Darkroom construction (safety protocols, chemical storage, organizational systems)
+- Negative development (formulations, processing techniques, chemistry maintenance)
+- Digitization equipment (technical drawings, parts lists, 3D models, assembly guides)
+- Digital conversion (scanning workflows and tonal inversion methods)
 
-The project covers all aspects of black-and-white film processing — from in-house darkroom setup (safety, 
-chemical storage, labeling systems), through negative development (recipes, processing techniques, 
-reusable chemistry), to digitizing equipment (drawings, estimates, STL models, wiring, assembly), 
-and finally to positive processing (digitization and tonal inversion).
+These resources target advanced practitioners and experimental photographers.
+They combine technical precision with accessible instructions.
 
-> The original content is written in Russian, with planned translations into English and Polish.
-
----
-
-### Semi-Professional DIY Approach
-
-While this project is DIY-oriented, the organization and methodology align more closely 
-with those of a small professional lab. It features structured inventory management (including 
-internal indexing and cataloging of substances), best practices for storage (separating long-term 
-archival and short-term operational chemicals), and encapsulated preservation methods using inert gases. 
-These techniques elevate a home lab setup to a semi-professional standard, borrowing from the modern 
-practices of photo chemists and general laboratory technicians.
-
-Yes — it can be done at home, and these are the best practices known to contemporary analog workflow specialists.
+> Original content in Russian. English and Polish translations in progress.
 
 ---
 
-### Educational Background and Motivation
+### Beyond DIY: Lab-Grade Standards
 
-This open-source project is partly a response to questions from my former students who are asking me about analog photography.
+This approach remains accessible but borrows methods from professional environments.
+It incorporates structured inventory management with indexed chemical cataloging.
+It separates long-term archival storage from daily working solutions.
+It employs inert gas preservation techniques to extend chemical life.
 
-Over the years, I've collected and systematized answers to questions ranging from "Where do I begin?" 
-and "How do I do this properly?" to "What went wrong?" and "How can I improve this setup?". 
-These questions, and the desire to provide structured, reliable guidance, gave rise to this modular 
-resource covering lab construction and process organization.
+These are not amateur improvisations. They are standard practices from photo chemistry and laboratory management.
+They transform home setups into precise, reliable workspaces without specialized infrastructure.
 
-I hope that fellow educators and enthusiasts returning to analog photography will find this material 
-helpful—not only to reduce the time spent searching through scattered online sources, but also to provide 
-a solid and safe starting point for their creative journeys.
+Can you implement professional standards in a personal space? Yes. These pages show how.
 
-This project reflects my ongoing effort to select the best available methods, tools, and workflows 
-that are practical, safe, and educationally appropriate for home and classroom use. 
+---
 
-I'm happy to share my experience—feel free to build upon it, remix it, and make it your own.
+### Why This Project Exists
 
+My former photography students keep asking about analog processes.
+
+Questions accumulated over years: "How do I start?" "What's the proper technique?" "Why did this fail?" "How can I improve?"
+These queries formed a pattern. They revealed a need for clear guidance on darkroom setup and workflow organization.
+
+This resource distills practical knowledge for educators and returning enthusiasts.
+It aims to replace hours of scattered internet searches with tested, reliable methods.
+Safety, accessibility, and educational value guide every recommendation.
+
+These pages contain techniques selected for home labs and classroom settings.
+They favor practical solutions over historical completeness or commercial specialization.
+
+This is experience made shareable. Take what serves you. Adapt what doesn't. Pass it forward.
 
 ---
 
@@ -98,10 +97,23 @@ contain **media tightly coupled with the main content** in that module.
   - `stl_3d_models/` → `.stl`
 
 
-## License
+## License and Attribution
 
-All content in this repository is licensed under the [Creative Commons Attribution 4.0 International License (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/). 
+This repository is licensed under [Creative Commons Attribution–NonCommercial 4.0 International (CC BY-NC 4.0)](https://creativecommons.org/licenses/by-nc/4.0/).
+
 Copyright © 2025 Valdas2000.
 
-You are free to share and adapt this work, including for commercial purposes, with proper attribution.
+You may copy, adapt, translate, and share this material for non-commercial purposes.  
+Use in teaching, research, public programs and experimental laboratories is explicitly permitted.  
+Attribution is required. The author's name (Valdas2000), a link to this repository, and a note on any changes must be included.  
+Reference to the CC BY-NC 4.0 license must be preserved.
 
+Commercial use is not allowed without written permission.  
+This includes publication for sale, use in monetized platforms or services, and any derivative work generating revenue.  
+To discuss commercial licensing, contact the author at:  
+valentin71@gmail.com  
+github.com/Valdas2000
+
+It means a great deal to know when this work resonates or proves useful.  
+If you include it in a lecture, course, exhibition, article or translation, a short message is welcome.  
+This is not required. But this project is alive. I want to know where it travels.
