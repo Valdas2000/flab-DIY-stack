@@ -10,6 +10,7 @@
 
 # Keep all documentation
 !*.md
+!*.txt
 !LICENSE*
 !README*
 
@@ -18,6 +19,8 @@
 .typora/
 .idea/
 .vscode/
+.drafts_py/
+.inwork/
 __pycache__/
 build/
 output/
@@ -83,3 +86,4 @@ raw/
 !*.png
 !*.webp
 !*.tiff
+!*.tif

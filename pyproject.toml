@@ -1,0 +1,50 @@
+[project]
+name = "film-digitisation-profiling-toolkit"
+version = "0.1.0"
+description = "A comprehensive toolkit for film digitisation colour profiling"
+readme = "README.md"
+license = {text = "CC BY-NC 4.0"}
+authors = [
+    {name = "Valdas2000", email = "valentin71@gmail.com"},
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: End Users/Desktop",
+    "Intended Audience :: Education",
+    "Topic :: Multimedia :: Graphics :: Graphics Conversion",
+    "Topic :: Multimedia :: Graphics :: Capture :: Digital Camera",
+    "Topic :: Scientific/Engineering :: Image Processing",
+    "License :: Free For Educational Use",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Operating System :: OS Independent",
+]
+requires-python = ">=3.12"
+dependencies = [
+    "PyQt5>=5.15.0",
+    "matplotlib>=3.7.0",
+    "numpy>=1.24.0",
+    "imageio>=2.31.0",
+    "rawpy>=0.18.0",
+    "pillow>=10.0.0",
+    "exifread>=3.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-qt>=4.0.0",
+    "black>=23.0.0",
+    "flake8>=6.0.0",
+    "mypy>=1.0.0",
+]
+
+# For future release
+# [project.scripts]
+# film-toolkit = "PatchReader:main"
+
+# For future packaging
+# [build-system]
+# requires = ["setuptools>=61.0", "wheel"]
+# build-backend = "setuptools.build_meta"

@@ -1,0 +1,831 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1043</width>
+    <height>796</height>
+   </rect>
+  </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
+  </property>
+  <property name="windowTitle">
+   <string>MainWindow</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QVBoxLayout" name="verticalLayout">
+    <item>
+     <widget class="QTabWidget" name="chtTabs">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>0</width>
+        <height>30</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>16777215</width>
+        <height>30</height>
+       </size>
+      </property>
+      <property name="currentIndex">
+       <number>0</number>
+      </property>
+      <widget class="QWidget" name="tab">
+       <attribute name="title">
+        <string>Tab 1</string>
+       </attribute>
+      </widget>
+      <widget class="QWidget" name="tab_2">
+       <attribute name="title">
+        <string>Tab 2</string>
+       </attribute>
+      </widget>
+     </widget>
+    </item>
+    <item>
+     <widget class="QWidget" name="l_workPlacer_H" native="true">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <layout class="QHBoxLayout" name="horizontalLayout_5">
+       <property name="spacing">
+        <number>4</number>
+       </property>
+       <property name="leftMargin">
+        <number>2</number>
+       </property>
+       <property name="topMargin">
+        <number>2</number>
+       </property>
+       <property name="rightMargin">
+        <number>2</number>
+       </property>
+       <property name="bottomMargin">
+        <number>2</number>
+       </property>
+       <item>
+        <widget class="QWidget" name="l_imagePlacer" native="true">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <layout class="QHBoxLayout" name="horizontalLayout_3">
+          <property name="spacing">
+           <number>2</number>
+          </property>
+          <property name="leftMargin">
+           <number>0</number>
+          </property>
+          <property name="topMargin">
+           <number>0</number>
+          </property>
+          <property name="rightMargin">
+           <number>0</number>
+          </property>
+          <property name="bottomMargin">
+           <number>0</number>
+          </property>
+          <item>
+           <widget class="InteractiveGraphicsView" name="tiff_grid">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>100</width>
+              <height>100</height>
+             </size>
+            </property>
+            <property name="verticalScrollBarPolicy">
+             <enum>Qt::ScrollBarAlwaysOff</enum>
+            </property>
+            <property name="horizontalScrollBarPolicy">
+             <enum>Qt::ScrollBarAlwaysOff</enum>
+            </property>
+            <property name="renderHints">
+             <set>QPainter::Antialiasing|QPainter::SmoothPixmapTransform</set>
+            </property>
+            <property name="transformationAnchor">
+             <enum>QGraphicsView::AnchorViewCenter</enum>
+            </property>
+            <property name="resizeAnchor">
+             <enum>QGraphicsView::AnchorViewCenter</enum>
+            </property>
+            <property name="viewportUpdateMode">
+             <enum>QGraphicsView::FullViewportUpdate</enum>
+            </property>
+            <property name="optimizationFlags">
+             <set>QGraphicsView::DontAdjustForAntialiasing</set>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QWidget" name="l_buttonsPlacer_V" native="true">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Expanding">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>300</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>300</width>
+           <height>16777215</height>
+          </size>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayout_3">
+          <item alignment="Qt::AlignHCenter">
+           <widget class="QGroupBox" name="cht_grp">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>300</width>
+              <height>120</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>300</width>
+              <height>16777215</height>
+             </size>
+            </property>
+            <property name="toolTip">
+             <string>Expected patches on the target</string>
+            </property>
+            <property name="layoutDirection">
+             <enum>Qt::LeftToRight</enum>
+            </property>
+            <property name="autoFillBackground">
+             <bool>false</bool>
+            </property>
+            <property name="title">
+             <string>CHT</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+            </property>
+            <layout class="QGridLayout" name="gridLayout">
+             <item row="0" column="0">
+              <widget class="QPushButton" name="btn_prevCHT">
+               <property name="toolTip">
+                <string>Stitch to previous cht file</string>
+               </property>
+               <property name="text">
+                <string>Prev</string>
+               </property>
+               <property name="shortcut">
+                <string>Ctrl+Shift+Left</string>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="1">
+              <widget class="QPushButton" name="btn_nextCHT">
+               <property name="toolTip">
+                <string>Stitch to next cht file</string>
+               </property>
+               <property name="text">
+                <string>Next</string>
+               </property>
+               <property name="shortcut">
+                <string>Ctrl+Shift+Right</string>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="0" colspan="2">
+              <widget class="QPushButton" name="btn_selectTiff">
+               <property name="toolTip">
+                <string>Select the target image</string>
+               </property>
+               <property name="text">
+                <string>Select Target File</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item alignment="Qt::AlignHCenter">
+           <widget class="QGroupBox" name="tiff_grp">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Maximum" vsizetype="Expanding">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>300</width>
+              <height>407</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>300</width>
+              <height>16777215</height>
+             </size>
+            </property>
+            <property name="toolTip">
+             <string>Target file name</string>
+            </property>
+            <property name="title">
+             <string>TiffName</string>
+            </property>
+            <layout class="QGridLayout" name="gridLayout_3">
+             <item row="3" column="1">
+              <widget class="QLabel" name="lbl_PatchPixels">
+               <property name="text">
+                <string>9999 px</string>
+               </property>
+              </widget>
+             </item>
+             <item row="4" column="0" colspan="2">
+              <widget class="Line" name="div_line_2">
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
+               </property>
+              </widget>
+             </item>
+             <item row="8" column="0" colspan="2">
+              <widget class="QPushButton" name="btn_ReadPatches">
+               <property name="toolTip">
+                <string>Read colors from the target</string>
+               </property>
+               <property name="text">
+                <string>Read Patches</string>
+               </property>
+              </widget>
+             </item>
+             <item row="2" column="0">
+              <widget class="QLabel" name="lbl_LightnessValue">
+               <property name="text">
+                <string>100%</string>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="0">
+              <widget class="QLabel" name="lbl_Lightness">
+               <property name="text">
+                <string>Lightness</string>
+               </property>
+              </widget>
+             </item>
+             <item row="2" column="1">
+              <widget class="QLabel" name="lbl_PatchPersents">
+               <property name="text">
+                <string>100%</string>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="0">
+              <widget class="QSlider" name="slide_Lightness">
+               <property name="toolTip">
+                <string>Lightness of the target (does not impact the original image)</string>
+               </property>
+               <property name="maximum">
+                <number>150</number>
+               </property>
+               <property name="singleStep">
+                <number>5</number>
+               </property>
+               <property name="pageStep">
+                <number>15</number>
+               </property>
+               <property name="value">
+                <number>100</number>
+               </property>
+               <property name="orientation">
+                <enum>Qt::Vertical</enum>
+               </property>
+               <property name="tickPosition">
+                <enum>QSlider::TicksBelow</enum>
+               </property>
+               <property name="tickInterval">
+                <number>20</number>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="1">
+              <widget class="QSlider" name="slide_PatchScale">
+               <property name="toolTip">
+                <string>Scale of patch zone</string>
+               </property>
+               <property name="maximum">
+                <number>200</number>
+               </property>
+               <property name="value">
+                <number>100</number>
+               </property>
+               <property name="orientation">
+                <enum>Qt::Vertical</enum>
+               </property>
+               <property name="tickPosition">
+                <enum>QSlider::TicksAbove</enum>
+               </property>
+               <property name="tickInterval">
+                <number>10</number>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="1">
+              <widget class="QLabel" name="lbl_PatchScale">
+               <property name="text">
+                <string>Patch Scale</string>
+               </property>
+              </widget>
+             </item>
+             <item row="6" column="0" colspan="2">
+              <widget class="QCheckBox" name="chk_ShowRisks">
+               <property name="toolTip">
+                <string>Show/Hide bad recognized patches</string>
+               </property>
+               <property name="text">
+                <string>Show Risks</string>
+               </property>
+               <property name="shortcut">
+                <string>Ctrl+Shift+W</string>
+               </property>
+              </widget>
+             </item>
+             <item row="7" column="0" colspan="2">
+              <widget class="Line" name="div_line1">
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
+               </property>
+              </widget>
+             </item>
+             <item row="9" column="0" colspan="2">
+              <widget class="QPushButton" name="btn_ResetGrid">
+               <property name="toolTip">
+                <string>Reset grid points to initial state</string>
+               </property>
+               <property name="text">
+                <string>Reset Grid</string>
+               </property>
+              </widget>
+             </item>
+             <item row="5" column="0" colspan="2">
+              <widget class="QCheckBox" name="chk_ShowPatches">
+               <property name="toolTip">
+                <string>Show/Hide patch areas</string>
+               </property>
+               <property name="text">
+                <string>Show Patches</string>
+               </property>
+               <property name="shortcut">
+                <string>Ctrl+W</string>
+               </property>
+              </widget>
+             </item>
+             <item row="10" column="0" alignment="Qt::AlignHCenter|Qt::AlignBottom">
+              <widget class="QGroupBox" name="grp_DisplayTarget">
+               <property name="minimumSize">
+                <size>
+                 <width>100</width>
+                 <height>120</height>
+                </size>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>100</width>
+                 <height>120</height>
+                </size>
+               </property>
+               <property name="title">
+                <string>Display</string>
+               </property>
+               <layout class="QVBoxLayout" name="verticalLayout_2">
+                <item>
+                 <widget class="QRadioButton" name="rb_show_ICM">
+                  <property name="text">
+                   <string>ICM</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QRadioButton" name="rb_show_LUT">
+                  <property name="text">
+                   <string>LUT</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QRadioButton" name="rb_show_REF">
+                  <property name="text">
+                   <string>Reference</string>
+                  </property>
+                  <property name="checked">
+                   <bool>true</bool>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </widget>
+             </item>
+             <item row="10" column="1">
+              <widget class="QGroupBox" name="groupBox">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="minimumSize">
+                <size>
+                 <width>100</width>
+                 <height>120</height>
+                </size>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>16777215</width>
+                 <height>120</height>
+                </size>
+               </property>
+               <property name="title">
+                <string>Target Info</string>
+               </property>
+               <layout class="QVBoxLayout" name="verticalLayout_4">
+                <item>
+                 <widget class="QLabel" name="lbl_Camera">
+                  <property name="text">
+                   <string>Camera</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QLabel" name="lbl_Temp">
+                  <property name="text">
+                   <string>10000 K</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QLabel" name="lbl_Exposure">
+                  <property name="text">
+                   <string>1/500 f2.8</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QLabel" name="lbl_Filmscan">
+                  <property name="text">
+                   <string>Filmscan</string>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item>
+     <widget class="QFrame" name="l_logsPlacer_H">
+      <property name="minimumSize">
+       <size>
+        <width>0</width>
+        <height>150</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>16777215</width>
+        <height>150</height>
+       </size>
+      </property>
+      <layout class="QVBoxLayout" name="l_BottomLogs" stretch="0">
+       <property name="spacing">
+        <number>0</number>
+       </property>
+       <property name="sizeConstraint">
+        <enum>QLayout::SetMaximumSize</enum>
+       </property>
+       <property name="leftMargin">
+        <number>0</number>
+       </property>
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>2</number>
+       </property>
+       <item>
+        <widget class="QTextEdit" name="app_log">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+           <horstretch>100</horstretch>
+           <verstretch>100</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>300</width>
+           <height>150</height>
+          </size>
+         </property>
+         <property name="contextMenuPolicy">
+          <enum>Qt::NoContextMenu</enum>
+         </property>
+         <property name="acceptDrops">
+          <bool>false</bool>
+         </property>
+         <property name="sizeAdjustPolicy">
+          <enum>QAbstractScrollArea::AdjustIgnored</enum>
+         </property>
+         <property name="undoRedoEnabled">
+          <bool>false</bool>
+         </property>
+         <property name="readOnly">
+          <bool>true</bool>
+         </property>
+         <property name="markdown">
+          <string notr="true"/>
+         </property>
+         <property name="acceptRichText">
+          <bool>false</bool>
+         </property>
+         <property name="placeholderText">
+          <string/>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>1043</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="sizePolicy">
+    <sizepolicy hsizetype="Expanding" vsizetype="Minimum">
+     <horstretch>0</horstretch>
+     <verstretch>0</verstretch>
+    </sizepolicy>
+   </property>
+   <widget class="QMenu" name="menuFile">
+    <property name="title">
+     <string>File</string>
+    </property>
+    <addaction name="actionNew"/>
+    <addaction name="actionOpen"/>
+    <addaction name="actionSave"/>
+    <addaction name="actionSave_As"/>
+    <addaction name="separator"/>
+    <addaction name="actionProperties"/>
+    <addaction name="separator"/>
+    <addaction name="actionExit"/>
+   </widget>
+   <widget class="QMenu" name="menuCHT">
+    <property name="title">
+     <string>CHT</string>
+    </property>
+    <addaction name="actionAdd_Cht"/>
+    <addaction name="actionDrop_Cht"/>
+    <addaction name="separator"/>
+    <addaction name="actionSelect_Target"/>
+    <addaction name="separator"/>
+    <addaction name="actionRead_Patches"/>
+    <addaction name="separator"/>
+    <addaction name="actionReset_Grid"/>
+   </widget>
+   <widget class="QMenu" name="menuTools">
+    <property name="title">
+     <string>Tools</string>
+    </property>
+    <addaction name="separator"/>
+    <addaction name="actionCreate_targets"/>
+    <addaction name="separator"/>
+    <addaction name="actionMake_TI3"/>
+    <addaction name="separator"/>
+    <addaction name="actionCreate_ICC_profile"/>
+    <addaction name="actionCreate_DCM_profile"/>
+    <addaction name="actionCreate_cube_LUT"/>
+   </widget>
+   <widget class="QMenu" name="menuHelp">
+    <property name="title">
+     <string>?</string>
+    </property>
+    <addaction name="actionAbout"/>
+   </widget>
+   <addaction name="menuFile"/>
+   <addaction name="menuCHT"/>
+   <addaction name="menuTools"/>
+   <addaction name="menuHelp"/>
+  </widget>
+  <action name="actionNew">
+   <property name="text">
+    <string>New PCL</string>
+   </property>
+   <property name="toolTip">
+    <string>Create a new pcl file (the old file discarded if any)</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+N</string>
+   </property>
+  </action>
+  <action name="actionOpen">
+   <property name="text">
+    <string>Open PCL ...</string>
+   </property>
+   <property name="toolTip">
+    <string>Open pcl file</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+O</string>
+   </property>
+  </action>
+  <action name="actionSave">
+   <property name="text">
+    <string>Save PCL</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+R</string>
+   </property>
+  </action>
+  <action name="actionSave_As">
+   <property name="text">
+    <string>Save PCL As...</string>
+   </property>
+   <property name="toolTip">
+    <string>Save pcl with a new name</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Alt+S</string>
+   </property>
+  </action>
+  <action name="actionExit">
+   <property name="text">
+    <string>Exit</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Q</string>
+   </property>
+  </action>
+  <action name="actionAdd_Cht">
+   <property name="text">
+    <string>Add Cht...</string>
+   </property>
+   <property name="toolTip">
+    <string>Add patch grid to pcl set</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+1</string>
+   </property>
+  </action>
+  <action name="actionDrop_Cht">
+   <property name="text">
+    <string>Drop Cht...</string>
+   </property>
+   <property name="toolTip">
+    <string>Remove current patch grid from pcl set</string>
+   </property>
+  </action>
+  <action name="actionSelect_Target">
+   <property name="text">
+    <string>Select Target File...</string>
+   </property>
+   <property name="toolTip">
+    <string>Select the color  target image</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+2</string>
+   </property>
+  </action>
+  <action name="actionRead_Patches">
+   <property name="text">
+    <string>Read Patches</string>
+   </property>
+   <property name="toolTip">
+    <string>Read colors from the target</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+R</string>
+   </property>
+  </action>
+  <action name="actionReset_Grid">
+   <property name="text">
+    <string>Reset Grid</string>
+   </property>
+   <property name="toolTip">
+    <string>Reset grid points to initial state</string>
+   </property>
+  </action>
+  <action name="actionMake_TI3">
+   <property name="text">
+    <string>Create TI3...</string>
+   </property>
+   <property name="toolTip">
+    <string>Create ti3 file from current pcl</string>
+   </property>
+  </action>
+  <action name="actionProperties">
+   <property name="text">
+    <string>PCL Properties...</string>
+   </property>
+   <property name="toolTip">
+    <string>Tune up pcl file</string>
+   </property>
+  </action>
+  <action name="actionCreate_targets">
+   <property name="text">
+    <string>Create targets</string>
+   </property>
+   <property name="toolTip">
+    <string>Generate target grids and images</string>
+   </property>
+  </action>
+  <action name="actionCreate_ICC_profile">
+   <property name="text">
+    <string>Create ICC profile...</string>
+   </property>
+   <property name="toolTip">
+    <string>Run a ICC profile wizard</string>
+   </property>
+  </action>
+  <action name="actionCreate_DCM_profile">
+   <property name="text">
+    <string>Create DCM profile</string>
+   </property>
+   <property name="toolTip">
+    <string>Run DCM profile generation wizard</string>
+   </property>
+  </action>
+  <action name="actionCreate_cube_LUT">
+   <property name="text">
+    <string>Create .cube LUT</string>
+   </property>
+   <property name="toolTip">
+    <string>Run a  .cube LUT generation wizard</string>
+   </property>
+  </action>
+  <action name="actionAbout">
+   <property name="text">
+    <string>About PatchReader...</string>
+   </property>
+   <property name="toolTip">
+    <string>About the program</string>
+   </property>
+  </action>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>InteractiveGraphicsView</class>
+   <extends>QGraphicsView</extends>
+   <header>InteractiveGraphicsView</header>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections/>
+</ui>

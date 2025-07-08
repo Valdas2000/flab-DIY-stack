@@ -1,0 +1,7 @@
+PyQt5>=5.15.0
+matplotlib>=3.7.0
+numpy>=1.24.0
+imageio>=2.31.0
+rawpy>=0.18.0
+pillow>=10.0.0
+exifread>=3.0.0

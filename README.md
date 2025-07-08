@@ -9,12 +9,13 @@ The structure is modular. Each component serves a specific function:
 - Darkroom construction (safety protocols, chemical storage, organizational systems)
 - Negative development (formulations, processing techniques, chemistry maintenance)
 - Digitization equipment (technical drawings, parts lists, 3D models, assembly guides)
-- Digital conversion (scanning workflows and tonal inversion methods)
+- **Digital conversion software** (Python tools for patch file processing, target management, and scanning workflows)
 
 These resources target advanced practitioners and experimental photographers.
 They combine technical precision with accessible instructions.
 
-> Original content in Russian. English and Polish translations in progress.
+> Original content in Russian. English and Polish translations are in progress.
+> Software components: English interface, code documentation
 
 ---
 
@@ -57,8 +58,15 @@ Each language has its own directory:
 `en/`, `pl/` – translations
 
 Inside each language directory, content is structured by modules and stages of the workflow.
-```
 
+**Software tools** are located in the project root:
+`tools/` – Python utilities for patch processing and target management
+
+```
+├───tools                  / # Python software components
+│   └─profiling  
+│     ├───PatchReader.py   / # Patch files processing utility 
+│     └───...              / # and other tools
 ├───1_10_Intro             / # Introduction and philosophy
 ├───1_20_Home_Lab          / # Basic lab setup, safety
 ├───1_30_Chemistry_Storage / # Chemical storage, labeling, CO₂ prep

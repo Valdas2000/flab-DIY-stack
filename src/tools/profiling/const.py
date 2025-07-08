@@ -1,0 +1,6 @@
+
+GENERIC_ERROR = -1  # Generic Error
+
+
+NEGATIVE_FILM = 0
+POSITIVE_FILM = 1

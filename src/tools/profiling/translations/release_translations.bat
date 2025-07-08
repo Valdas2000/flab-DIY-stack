@@ -1,0 +1,1 @@
+C:\Qt\Tools\QtLinguist\lrelease PatchReader.ts
