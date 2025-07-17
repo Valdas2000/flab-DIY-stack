@@ -4,6 +4,39 @@ import sys
 # Добавляем импорт для диалога файлов
 from PyQt5.QtWidgets import QApplication, QFileDialog
 
+
+def get_raw_filters_string() -> str:
+    # Raw extensions by brand
+    RAW_EXTENSIONS = {
+        'All RAW Files': ['*.cr2', '*.cr3', '*.crw', '*.nef', '*.nrw', '*.arw', '*.srf', '*.sr2',
+                          '*.raf', '*.orf', '*.rw2', '*.raw', '*.pef', '*.ptx', '*.dng', '*.rwl',
+                          '*.srw', '*.3fr', '*.fff', '*.iiq', '*.mef', '*.dcr', '*.kdc'],
+        'Canon': ['*.cr2', '*.cr3', '*.crw'],
+        'Nikon': ['*.nef', '*.nrw'],
+        'Sony': ['*.arw', '*.srf', '*.sr2'],
+        'Fujifilm': ['*.raf'],
+        'Olympus/OM System': ['*.orf'],
+        'Panasonic': ['*.rw2', '*.raw'],
+        'Pentax/Ricoh': ['*.pef', '*.ptx'],
+        'Leica': ['*.dng', '*.rwl'],
+        'Samsung': ['*.srw'],
+        'Hasselblad': ['*.3fr', '*.fff'],
+        'Phase One': ['*.iiq'],
+        'Mamiya': ['*.mef'],
+        'Kodak': ['*.dcr', '*.kdc'],
+        'Adobe DNG': ['*.dng'],
+        'All Files': ['*.*']
+    }
+
+    file_filters = []
+    for brand, extensions in RAW_EXTENSIONS.items():
+        filter_str = f"{brand} ({' '.join(extensions)})"
+        file_filters.append(filter_str)
+
+    # Объединяем все фильтры
+    filter_string = ";;".join(file_filters)
+    return filter_string
+
 open_filters = {
     'pcl': {
         'open_caption': "Pick a pcl file",
@@ -19,6 +52,10 @@ open_filters = {
     'cht': {
         'open_caption': "Pick patch grid file...",
         'filter': "Argyll patch grids (*.cht)"
+    },
+    'raw': {
+        'open_caption': "Select a raw image...",
+        'filter': get_raw_filters_string()
     }
 
 }

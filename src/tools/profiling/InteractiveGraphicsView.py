@@ -1,9 +1,29 @@
+#B&W
+
+#printtarg -v -h -i i1 -p 210x148 -M 2 -C -L -S -a 1.07 -b -T 610 -R 2 reverse_bw220_a5_target
+#scanin -v -p -dipn reverse_bw220_a5_target.tif reverse_bw220_a5_target.cht reverse_bw220_a5_target.ti2
+
+
+#printtarg -v -h -i i1 -p 210x148 -M 2 -C -L -S -a 1.07 -b -T 610 -R 2  reverse_bw220_a5_target
+
+# targen -v -d2 -G -g200 -e10 -B12 -f0 reverse_gray_rgb
+# printtarg -v -h -i i1 -p 210x148 -M 2 -C -L -S -a 1.07 -b -T 610 -R 3  reverse_gray_rgb
+# cctiff -v -p -f T -N -i r FOMEI_Baryta_MONO_290_PIXMA_G540_PPPL_HQ_RB4.icm  -i a sRGB.icm reverse_gray_rgb.tif reverse_gray_rgb_barita.tif
+
+# scanin -v -p -dipn reverse_gray_rgb.tif reverse_bw220_a5_target.cht reverse_bw220_a5_target.ti2
+
+#💡 Рекомендации по выбору -R
+# Тип	Цель	Критерий выбора -R
+# Ч/Б (grayscale)	Линейность градаций	direction ΔE в диапазоне 12–18, worst ΔE < 2
+# Цветной (RGB)	Различимость цветов и серого	direction ΔE ≥ 20, worst ΔE < 3
 
 import copy
 from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene
 from PyQt5.QtCore import Qt, pyqtSignal, QPointF
-from PyQt5.QtGui import QResizeEvent, QMouseEvent, QPainter, QBrush, QPen, QCursor
+from PyQt5.QtGui import QResizeEvent, QMouseEvent, QPainter, QBrush, QPen, QCursor, QFont
 from PyQt5.QtGui import QImage
+import numpy as np
+from src.tools.profiling.const import GENERIC_OK
 
 
 class InteractiveGraphicsView(QGraphicsView):
@@ -14,9 +34,9 @@ class InteractiveGraphicsView(QGraphicsView):
     mouse_dragged = pyqtSignal(QPointF)
 
     # New signals for reference point dragging
-    corner_drag_started = pyqtSignal(str)    # (corner_name)
-    corner_drag_finished = pyqtSignal(str)   # (corner_name)
-    corner_position_changed = pyqtSignal(str, QPointF)  # (corner_name, new_position)
+    corner_drag_started = pyqtSignal(int)    # (corner_idx)
+    corner_drag_finished = pyqtSignal(int)   # (corner_idx)
+    corner_position_changed = pyqtSignal(int, QPointF)  # (corner_idx, new_position)
 
 
     def __init__(self, parent=None):
@@ -39,52 +59,81 @@ class InteractiveGraphicsView(QGraphicsView):
         self._grid_drawer = None       # can be set to object with draw(painter, rect) method
         self.show_patches = False
 
-        self.parametric_uv = []
-        self.patch_centers = []
-        self.patch_size = []
-        self.reference_grid = {}
+        self.uv = np.array([], dtype=np.float32)
+        self.uv_wh = np.array([], dtype=np.float32)
+
+        self.points = []
+        self.patch_wh = []
+        self.half_patch = []
+        self.corner = []
+        self.range_names = None
+        self.range_idx = None
         self.patch_scale =  100
 
-        self.gridpoint_radius = 3
+        # self.gridpoint_radius = 5
+        self.gridpoint_radius = 2
         self.gridpoint_diameter = self.gridpoint_radius * 2
         self.gridpoint_color =  Qt.GlobalColor.yellow
 
-        self.corner_radius = 5
+        # self.corner_radius = 10
+        self.corner_radius = 4
         self.corner_diameter = self.corner_radius * 2
         self.corner_color = Qt.GlobalColor.green
 
+        # self.patch_linewidth = 4
         self.patch_linewidth = 2
         self.patch_color = Qt.GlobalColor.cyan
         self.patch_pen = QPen(self.patch_color, self.patch_linewidth)
 
         # Reference point drag state (as in old code)
         self.dragging = False
-        self.dragged_corner = None
+        self.dragged_corner = None          # corner index
         self.original_patches_state = False
 
         # Capture and visual feedback parameters
         self.corner_area = 25  # Area around reference point for capture
         self.corner_on_drag_color = Qt.GlobalColor.red  # Point color during drag
-        self.hover_corner = None
+        self.corner_idx = None            # corner index
 
-    def set_background_image(self, img_array, cht_data , background_brightness: int):
+    def set_background_image(self, img_array, cht_data , is_demo = True,  background_brightness: int = 100):
         """Get an image as a NumPy-array, converts it and save for future use."""
+        height, width = img_array.shape[:2]
         self._original_image_array = img_array.copy()
         self._update_qimage_from_array(img_array)
 
-        self.parametric_uv = copy.copy(cht_data['parametric_uv'])  # disable any updates for the parametric_uv
-        self.patch_centers = cht_data['grid_linear']
-        self.patch_size =  cht_data['patch_size']
-        self.reference_grid = cht_data['reference_grid']
-        self.patch_scale=cht_data['patch_scale']
-        self.show_patches=cht_data.get('is_draw_patches', False)
+        self.uv = copy.copy(cht_data['uv'])  # disable any updates for the parametric_uv
+        self.uv_wh = copy.copy(cht_data['uv_wh'])  # disable any updates for the parametric_uv
 
-        self._scene.setSceneRect(0, 0, self._background_image.width(), self._background_image.height())  # Key line
+        if is_demo:
+            self.points = copy.copy(cht_data['points'])
+            self.half_patch= copy.copy(cht_data['half_patch'])
+            self.patch_wh= copy.copy(cht_data['patch_wh'])
+            self.corner = cht_data['corner_demo']
+        else :
+            self.points = cht_data['points']
+            self.half_patch= cht_data['half_patch']
+            self.patch_wh= cht_data['patch_wh']
+            self.corner = cht_data['corner']
+
+        from cht_data_calcs import adopt_corner_target
+        adopt_corner_target(self.corner, width , height)
+
+        self.patch_scale= cht_data['patch_scale']
+        self.show_patches= cht_data.get('is_draw_patches', False)
+        self.corner_idx= None
+
+        self.range_names = copy.copy(cht_data['range_names'])
+        self.range_idx = []
+        for patch_name in self.range_names:
+            self.range_idx.append(cht_data['patch_dict'][patch_name]['array_idx'])
+
+        self._scene.setSceneRect(0, 0, width, height)  # Key line
         # self.fitInView(self._scene.sceneRect(), Qt.AspectRatioMode.KeepAspectRatio)
 
         self.zoom_to_fit()
 
         self.apply_grid_transform()
+        self.update_brightness(background_brightness)
         self.viewport().update()
 
     def set_show_patches(self, is_draw_patches):
@@ -143,7 +192,7 @@ class InteractiveGraphicsView(QGraphicsView):
         if self._background_image:
             self._scene.setBackgroundBrush(QBrush(Qt.GlobalColor.white))
         self._background_image = None
-        self.parametric_uv = []
+        self.uv = np.array([], dtype=np.float32)
 
         self.resetTransform()
         self.viewport().update()
@@ -155,7 +204,7 @@ class InteractiveGraphicsView(QGraphicsView):
 
     def draw_patch_centers_foreground(self, painter, rect):
         """Draw patch centers in foreground."""
-        if not self.patch_centers:
+        if self.uv is None or self.uv.size == 0:
             return
 
         # Set up brush ONCE
@@ -163,12 +212,12 @@ class InteractiveGraphicsView(QGraphicsView):
         painter.setBrush(QBrush(self.gridpoint_color))
 
         # Draw circles WITHOUT unnecessary calculations
-        for x, y in self.patch_centers:
+        for idx, (x, y) in enumerate(self.points):
             painter.drawEllipse(int(x) - self.gridpoint_radius , int(y) - self.gridpoint_radius , self.gridpoint_diameter, self.gridpoint_diameter)
 
     def draw_corner_points_foreground(self, painter, rect):
         """Draw corner points in foreground."""
-        if not self.reference_grid:
+        if self.uv is None or self.uv.size == 0:
             return
 
         # Set up brush ONCE
@@ -176,31 +225,51 @@ class InteractiveGraphicsView(QGraphicsView):
         painter.setBrush(QBrush(self.corner_color))
 
         # Draw circles WITHOUT unnecessary calculations
-        for corner_name, (x, y) in self.reference_grid.items():
+        for idx, (x, y) in enumerate(self.corner):
             painter.drawEllipse(int(x) - self.corner_radius, int(y) - self.corner_radius, self.corner_diameter, self.corner_diameter)
+
+    def draw_labels_foreground(self, painter, rect):
+        """Draw patch labels with scaling."""
+        if self.uv is None or self.uv.size == 0:
+            return
+
+        painter.setPen(self.patch_pen)
+        painter.setBrush(Qt.NoBrush)
+
+        # Общий масштаб = масштаб сцены * масштаб патчей
+        scene_scale = self.transform().m11()
+        patch_scale = self.patch_scale / 100
+        total_scale = scene_scale * patch_scale
+
+        # Размер шрифта
+        base_font_size = 10
+        font_size = max(10, int(base_font_size / total_scale))
+
+        font = QFont()
+        font.setPointSize(font_size)
+        painter.setFont(font)
+
+        for idx, lbl in enumerate(self.range_names):
+            patch_idx = self.range_idx[idx]
+            w, h = (self.half_patch[patch_idx] * self.patch_scale / 100).astype(int)
+            x, y = self.points[patch_idx]
+
+            painter.drawText(int(x-w), int(y-h-font_size//4), lbl)
 
     def draw_patches_foreground(self, painter, rect):
         """Draw patch boundaries in foreground."""
-        if not self.patch_centers or not self.patch_size:
+        if self.uv is None or self.uv.size == 0:
             return
-
-        # Calculate sizes ONCE
-        patch_width, patch_height = self.patch_size
-        scaled_width = int(patch_width * self.patch_scale) // 100
-        scaled_height = int(patch_height * self.patch_scale) // 100
-        half_width = scaled_width >> 1  # Bit shift is faster than division
-        half_height = scaled_height >> 1
 
         # Set up brush for specific point
         painter.setPen(self.patch_pen)
         painter.setBrush(Qt.NoBrush)
 
-        # Draw rectangle based on center coordinates
-        for x, y in self.patch_centers:
-            painter.drawRect(int(x) - half_width, int(y) - half_height,
-                     scaled_width, scaled_height)
+        for idx, (x, y) in enumerate(self.points):
+            w, h = (self.half_patch[idx] * self.patch_scale / 100).astype(int)
+            painter.drawRect(int(x - w), int(y - h), w * 2, h * 2)
 
-    def find_nearest_corner(self, scene_pos):
+    def find_nearest_corner(self, scene_pos) -> int | None:
             """Find nearest reference point within tolerance zone.
 
             Args:
@@ -209,38 +278,41 @@ class InteractiveGraphicsView(QGraphicsView):
             Returns:
                 str or None: Reference point name or None if not found
             """
-            if not self.reference_grid:
+            if self.uv is None or self.uv.size == 0:
                 return None
 
-            for corner_name, (x, y) in self.reference_grid.items():
+            idx = 0
+            for idx, (x, y) in enumerate(self.corner):
                 distance = ((scene_pos.x() - x) ** 2 + (scene_pos.y() - y) ** 2) ** 0.5
                 if distance <= self.corner_area:
-                    return corner_name
+                    return idx
+                idx += 1
+
             return None
 
-    def update_cursor_for_corner(self, corner_name):
+    def update_cursor_for_corner(self, corner_idx):
         """Update cursor depending on hover state.
 
         Args:
             corner_name (str or None): Name of reference point under cursor
         """
-        if corner_name and not self.dragging:
+        if corner_idx is not None:
             # Hovering over reference point - "hand" cursor
             self.setCursor(QCursor(Qt.CursorShape.OpenHandCursor))
-            self.hover_corner = corner_name
+            self.corner_idx = corner_idx
         elif not self.dragging:
             # Normal cursor
             self.setCursor(QCursor(Qt.CursorShape.ArrowCursor))
-            self.hover_corner = None
+            self.corner_idx = None
 
-    def start_corner_drag(self, corner_name):
+    def start_corner_drag(self, corner_idx: int):
         """Start dragging reference point.
 
         Args:
             corner_name (str): Reference point name
         """
         self.dragging = True
-        self.dragged_corner = corner_name
+        self.dragged_corner = corner_idx
 
         # Change cursor to "move"
         self.setCursor(QCursor(Qt.CursorShape.ClosedHandCursor))
@@ -254,35 +326,34 @@ class InteractiveGraphicsView(QGraphicsView):
         self.viewport().update()
 
         # Notify about drag start
-        self.corner_drag_started.emit(corner_name)
+        self.corner_drag_started.emit(corner_idx)
 
-    def update_corner_position(self, corner_name, new_position):
+    def update_corner_position(self, corner_idx, new_position):
         """Update reference point position during drag.
 
         Args:
-            corner_name (str): Reference point name
+            corner_idx (int): Reference point name
             new_position (QPointF): New position
         """
-        if corner_name in self.reference_grid:
-            self.reference_grid[corner_name] = (new_position.x(), new_position.y())
+        self.corner[corner_idx][:] = [new_position.x(), new_position.y()]
 
-            # Recalculate patch centers
-            self.apply_grid_transform()
+        # Recalculate patch centers
+        self.apply_grid_transform()
 
-            # Update display
-            self.viewport().update()
+        # Update display
+        self.viewport().update()
 
-            # Notify about position change
-            self.corner_position_changed.emit(corner_name, new_position)
+        # Notify about position change
+        self.corner_position_changed.emit(corner_idx, new_position)
 
     def finish_corner_drag(self):
         """Finish dragging reference point."""
-        if self.dragging and self.dragged_corner:
+        if self.dragging and self.dragged_corner is not None:
             # Return cursor to normal
             self.setCursor(QCursor(Qt.CursorShape.ArrowCursor))
 
             # Restore patch display state
-            self.show_patches = self.original_patches_state
+            # self.show_patches = self.original_patches_state
 
             # Update display
             self.viewport().update()
@@ -307,15 +378,15 @@ class InteractiveGraphicsView(QGraphicsView):
         """Mouse move event handler (analog of on_motion + on_hover)."""
         scene_pos = self.mapToScene(event.pos())
 
-        if self.dragging and self.dragged_corner:
+        if self.dragging and self.dragged_corner is not None:
             # Analog of on_motion - update position of dragged point
             self.update_corner_position(self.dragged_corner, scene_pos)
             # Notify about dragging
             self.mouse_dragged.emit(scene_pos)
         else:
             # Analog of on_hover - check hover over reference point
-            corner = self.find_nearest_corner(scene_pos)
-            self.update_cursor_for_corner(corner)
+            idx = self.find_nearest_corner(scene_pos)
+            self.update_cursor_for_corner(idx)
             # Notify about mouse movement
             self.mouse_moved.emit(scene_pos)
 
@@ -328,10 +399,10 @@ class InteractiveGraphicsView(QGraphicsView):
             scene_pos = self.mapToScene(event.pos())
 
             # Check if user clicked on reference point
-            corner = self.find_nearest_corner(scene_pos)
-            if corner:
+            idx = self.find_nearest_corner(scene_pos)
+            if idx is not None:
                 # Start dragging reference point
-                self.start_corner_drag(corner)
+                self.start_corner_drag(idx)
                 # Notify about click
                 self.mouse_clicked.emit(scene_pos)
                 return  # Don't call standard behavior
@@ -359,7 +430,7 @@ class InteractiveGraphicsView(QGraphicsView):
         # Reset hover state when mouse leaves
         if not self.dragging:
             self.setCursor(QCursor(Qt.CursorShape.ArrowCursor))
-            self.hover_corner = None
+            self.corner_idx = None
 
         super().leaveEvent(event)
 
@@ -404,32 +475,17 @@ class InteractiveGraphicsView(QGraphicsView):
 
     def apply_grid_transform(self):
         """Recalculate grid_linear based on current reference_grid and pre-prepared UV."""
-        if  not self.parametric_uv:
+        if self.uv is None or self.uv.size == 0:
             return
-        print("apply_grid_transform")
-        tl = self.reference_grid['top_left']
-        tr = self.reference_grid['top_right']
-        bl = self.reference_grid['bottom_left']
-        br = self.reference_grid['bottom_right']
+        from cht_data_calcs import transform_uv_to_screen
 
-        new_centers = []
-        for u, v in self.parametric_uv:
-            x = (
-                    (1 - u) * (1 - v) * tl[0] +
-                    u * (1 - v) * tr[0] +
-                    (1 - u) * v * bl[0] +
-                    u * v * br[0]
-            )
-            y = (
-                    (1 - u) * (1 - v) * tl[1] +
-                    u * (1 - v) * tr[1] +
-                    (1 - u) * v * bl[1] +
-                    u * v * br[1]
-            )
-            new_centers.append((x, y))
-
-        # Replace contents of existing list
-        self.patch_centers[:] = new_centers
+        ret, coords = transform_uv_to_screen(self.uv, self.corner)
+        if ret == GENERIC_OK:
+            self.points[:] = coords
+        ret, coords = transform_uv_to_screen(self.uv_wh, self.corner)
+        if ret == GENERIC_OK:
+            self.patch_wh[:] = coords
+            self.half_patch[:] = coords / 2
 
     def drawBackground(self, painter, rect):
         super().drawBackground(painter, rect)
@@ -443,7 +499,7 @@ class InteractiveGraphicsView(QGraphicsView):
             self._grid_drawer.draw(painter, rect)
 
         # no foreground for empty data
-        if not self.parametric_uv:
+        if self.uv is None or self.uv.size == 0:
             return
 
         # Draw patch centers
@@ -455,6 +511,8 @@ class InteractiveGraphicsView(QGraphicsView):
         # Draw patches
         if self.show_patches:
             self.draw_patches_foreground(painter, rect)
+
+        self.draw_labels_foreground(painter, rect)
 
     def get_current_scale(self):
         """Get current view scale."""

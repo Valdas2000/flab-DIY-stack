@@ -16,10 +16,16 @@
 #}
 
 import pickle
-from typing import Dict, Optional, Any
-from read_cht import parse_cht_file, convert_cht_to_pixels
+import copy
+import re
+import os
 from pathlib import Path
 from PIL import Image
+from typing import Dict, Optional, Any
+
+from const import GENERIC_ERROR, GENERIC_OK
+from read_cht import parse_cht_file
+from cht_data_calcs import convert_cht_to_pixels
 
 # Qt translation support
 def get_translator():
@@ -82,22 +88,41 @@ def get_tiff_physical_size(tiff_path):
         }
 
 class TargetsManager:
-    def __init__(self):
+    def __init__(self, create_new_project_dict: dict|None = None):
         self.header = {
-            "pcl_file": "",
-            "ti3_file": "",
+            "argyll_path": "",
+            "pcl_name": "",
+            "color_ref": "",
+            "remake": { },
+            "image_options": { },
+            "outputs": [],
+
             "current_cht_file": "",
         }
         self.data: Dict[str, Dict[str, Any]] = {}
 
+        if create_new_project_dict:
+            self.parce_init(create_new_project_dict)
+
+
+    def parce_init(self,new_project_dict):
+        self.header["argyll_path"]= new_project_dict["argyll_path"]
+        self.header["pcl_name"] = new_project_dict["pcl_name"]
+        self.header["color_ref"] = new_project_dict["color_ref"]
+        self.header["remake"] = new_project_dict["remake"]
+        self.header["outputs"] = new_project_dict["outputs"]
+        self.header["image_options"] = new_project_dict["image_options"]
+
+        cht = new_project_dict["targets"]["cht_names"]
+        markers = new_project_dict["targets"]["markers"]
+        for cht_name in cht:
+            self.add_cht_file(cht_name,markers)
+        return True
+
 # class storage operations
-    def save_as(self, path: str):
-        self.header["pcl_file"] = path
-        with open(path, "wb") as f:
-            pickle.dump({"header": self.header, "data": self.data}, f)
 
     def save(self):
-        path = self.header["pcl_file"]
+        path = self.header["pcl_name"]
         with open(path, "wb") as f:
             pickle.dump({"header": self.header, "data": self.data}, f)
 
@@ -107,50 +132,67 @@ class TargetsManager:
             self.header = state["header"]
             self.data = state["data"]
 
-    def add_cht_file(self, cht_file: str) ->bool:
+            directory = os.path.dirname(path)
+            os.chdir(directory)
+
+    def add_cht_file(self, cht_file: str, markers = None) ->bool:
         """Read cht file and tiff additions. Build cht_data from them,
         return True on success, False on error."""
-
+        from create_target_preview import create_color_target_tiff , resize_tiff_to_96dpi
         if not cht_file:
             print(tr("Empty file name passed to add_cht_file"))
             return False
 
-        spare_tif_file= get_tif_file(cht_file)
-        if not spare_tif_file:
-            print(tr("Spare TIFF file not found"))
+        ret, cht_data = parse_cht_file(cht_file)
+        if ret != GENERIC_OK:
+            print(tr("Error: parsing error: {0}").format(cht_file))
             return False
 
+        # create a preview file based on cht or on the original target
+        spare_tif_file= get_tif_file(cht_file)
+        cht_file_path = Path(cht_file)
+        cht_name = cht_file_path.stem
+        preview_file = cht_name + "_preview.tif"
+        if  spare_tif_file:
+            resize_tiff_to_96dpi(spare_tif_file, preview_file)
+        else:
+            create_color_target_tiff(cht_data, preview_file, cht_file_path.stem)
+
+        spare_tif_file = preview_file
+
+        s_size = get_tiff_physical_size(spare_tif_file)
+        # Get image width and height
+        image_width = s_size["width_px"]
+        image_height = s_size["height_px"]
+        dpi = s_size["dpi_x"]  # default value
+
+        ret = convert_cht_to_pixels(cht_data, image_width, image_height, dpi, True)
         data = {
             "image_file": None,
-             "is_parsed": False,
-             "cht_data": parse_cht_file(cht_file)
+            "preview_file": preview_file,
+            "is_parsed": False,
+            "file_name" : Path(cht_file).name,
+            "cht_data": cht_data
          }
 
-        if spare_tif_file:
-            try:
-                s_size = get_tiff_physical_size(spare_tif_file)
-                # Get image width and height
-                image_width = s_size["width_px"]
-                image_height = s_size["height_px"]
-                dpi = s_size["dpi_x"]  # default value
-                cht_data = parse_cht_file(cht_file)
-                cht_data = convert_cht_to_pixels(cht_data, image_width, image_height, dpi)
+        if ret == GENERIC_OK:
+            range_names = cht_data['range_names']
+            name = first = range_names[0]
+            # Извлекаем буквенную часть из первого элемента
+            first_letters = re.match(r'([A-Za-z]+)', first).group(1)
+            # Ищем первое вхождение с отличающейся буквенной частью
+            for item in range_names[1:]:
+                item_letters = re.match(r'([A-Za-z]+)', item).group(1)
+                if item_letters != first_letters:
+                    name =  f"{first_letters}-{item_letters}"
+                    break
 
-                cht_name = Path(cht_file).name
-                self.header["current_cht_file"] = cht_name
-
-                if cht_name not in self.data:
-                    self.data[cht_name] = {
-                        "image_file": None,
-                        "is_parsed": False,
-                        "cht_data": cht_data
-                    }
-                else:
-                    self.data[cht_name]["is_parsed"] = False
-                    self.data[cht_name]["cht_data"] = cht_data
-            except Exception as e:
-                print(tr("Spare tiff not found: {0}").format(spare_tif_file))
-                return False
+            if not markers:
+                self.data[name] = copy.deepcopy(data)
+            else:
+                for marker in markers:
+                    nme = f"{name} {marker}"
+                    self.data[nme] = copy.deepcopy(data)
 
         return True
 

@@ -1,8 +1,9 @@
 import sys
 import os
 import traceback
-import re
-
+import copy
+from pathlib import Path
+import numpy as np
 
 # Your existing fix for PyCharm
 if 'pydevd' in sys.modules:
@@ -11,15 +12,21 @@ if 'pydevd' in sys.modules:
     os.environ['PYDEVD_USE_CYTHON'] = '0'
     os.environ['PYDEVD_DISABLE_FILE_VALIDATION'] = '1'
 
-
+from PyQt5.QtWidgets import QApplication
 from PyQt5 import QtWidgets, QtGui, QtCore
-from patch_reader_ui import Ui_MainWindow
-from pathlib import Path
-import numpy as np
+from PyQt5.QtCore import Qt
 
+
+# Enable High-DPI scaling
+QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
+QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
+
+# Local imports
 from InteractiveGraphicsView import InteractiveGraphicsView
-
 from TargetsManager import TargetsManager
+from patch_reader_ui import Ui_MainWindow
+from raw_converter import convert_raw_batch
+from const import GENERIC_OK
 from pick_files import  open_file_dialog, save_file_dialog
 
 translator = QtCore.QTranslator()
@@ -36,21 +43,24 @@ class MainApp(QtWidgets.QMainWindow):
         self.is_nothing_to_drow = True      # the flag suppress redraw grid
         self.is_drow_risks = False          # the flag suppress color read risks
 
+        self.app_directory = ""
+        self.set_project_directory(os.getcwd())
+
         # Example of connecting button
         # self.ui.someButton.clicked.connect(self.on_button_clicked)
 
         # Example of connecting signal from graphics_view
         # self.graphics_view.mouse_clicked.connect(self.on_graphics_click)
-       #  self.setup_global_print_redirect()
+        # self.setup_global_print_redirect()
         self.ui.chtTabs.clear()
         self.connect_signals()
 
     ## logical files
-        self.cht_data = {}
+        self.target_data = {}
         self.image_file= ""
         self.is_parsed = False
+        self.show_preview = True
 
-        self.patch_size = 0      # patch size in pixels
         self.patch_scale=  100   # patch scale in percents
 
         self.update_controls()
@@ -73,6 +83,15 @@ class MainApp(QtWidgets.QMainWindow):
         # Replace global print
         import builtins
         builtins.print = custom_print
+
+    def set_project_directory(self, project_dir):
+        """Centralized method to change project directory."""
+        os.chdir(project_dir)
+        self.project_directory = project_dir
+
+        # Add app directory to sys.path if needed
+        if self.app_directory not in sys.path:
+            sys.path.insert(0, self.app_directory)
 
     def log(self,line:str):
         self.ui.app_log.append(line)
@@ -168,21 +187,6 @@ class MainApp(QtWidgets.QMainWindow):
         self.ui.tiff_grid.clear_background()
         self.is_nothing_to_drow = True
 
-    def update_reference_grid(self, img_size):
-        reference_grid = self.cht_data["cht_data"]['reference_grid']
-        p =reference_grid['bottom_right']
-        max_x = img_size[0]
-        max_y =  img_size[1]
-        is_out_of_bounds = p[0] > max_x or p[1] > max_y
-        if is_out_of_bounds:
-            padding = 10
-            max_x -= padding
-            max_y -= padding
-            reference_grid['reference_grid']['top_left'] = (padding, padding)
-            reference_grid['reference_grid']['top_right'] = (max_x, padding)
-            reference_grid['reference_grid']['bottom_left'] = (padding, max_y)
-            reference_grid['reference_grid']['bottom_right'] = (max_x, max_y)
-
     def load_tif(self):
         # Load image
         if not bool(self.image_file):
@@ -192,13 +196,11 @@ class MainApp(QtWidgets.QMainWindow):
                 from PIL import Image
                 image = Image.open(self.image_file)
                 # Convert to NumPy array
-                self.update_reference_grid(image.size)
                 path = Path(self.image_file)
                 title = path.stem + path.suffix
-                self.ui.tiff_grid.set_background_image(np.array(image), self.cht_data['cht_data'], self.ui.slide_Lightness.value())
+                self.ui.tiff_grid.set_background_image(np.array(image), self.target_data['cht_data'], self.show_preview,  self.ui.slide_Lightness.value())
                 self.ui.tiff_grp.setTitle(title)
                 self.is_nothing_to_drow = False
-                self.cht_data["image_file"] = self.image_file
 
             except Exception as e:
                 self.log(f"Error loading image: {e}")
@@ -234,8 +236,19 @@ class MainApp(QtWidgets.QMainWindow):
 
     # === MENU ACTION HANDLERS ===
     def action_new_pcl(self):
-        self.tm = TargetsManager()
-        self.setWindowTitle("PatchReader")
+        from create_new_project import create_new_project
+
+        ret, data = create_new_project()
+        if not ret == GENERIC_OK:
+            return
+        self.tm = TargetsManager(data)
+        self.tm.save()
+
+        path = os.getcwd()
+        progect = self.tm.header["pcl_name"]
+        full_path = os.path.join(path, progect)
+        self.setWindowTitle("PatchReader " + str(full_path))
+
         self.is_nothing_to_drow = True
         self.rebuild_tabs()
         self.update_controls()
@@ -247,6 +260,8 @@ class MainApp(QtWidgets.QMainWindow):
         if file_path:
             self.tm.load(file_path)
             self.rebuild_tabs()
+            index = self.ui.chtTabs.currentIndex()
+            self.update_by_index(index)
         return
 
     def action_save_pcl(self):
@@ -382,10 +397,11 @@ class MainApp(QtWidgets.QMainWindow):
 
     def btn_select_tiff_clicked(self):
         """Select TIFF button clicked"""
-        file_path = open_file_dialog('tif', self.image_file)
+        file_path = open_file_dialog('raw', self.image_file)
         if not file_path:
             self.log(self.tr("Open TIFF canceled"))
             return
+        metadata = convert_raw_batch
         self.image_file = file_path
         self.load_tif()
         self.update_controls()
@@ -411,19 +427,16 @@ class MainApp(QtWidgets.QMainWindow):
     def slide_patch_scale_changed(self, value):
         """Patch Scale slider value changed"""
         self.ui.lbl_PatchPersents.setText(f"{value}%")
-        sq = int(self.patch_size * value) // 100
-        self.ui.lbl_PatchPersents.setText(f"{value}%")
-        self.ui.lbl_PatchPixels.setText(f"{sq} px")
         if self.patch_scale != value:
             self.patch_scale = value
-            self.cht_data['cht_data']['patch_scale'] = value
+            if not self.show_preview:
+                self.target_data['cht_data']['patch_scale'] = value
             self.ui.tiff_grid.set_patch_scale(value)
 
     # === CHECKBOX HANDLERS ===
     def chk_show_patches_toggled(self, checked):
         """Show Patches checkbox toggled"""
-        print(f"Checkbox: Show Patches {'checked' if checked else 'unchecked'}")
-        self.cht_data['is_draw_patches'] = checked
+        self.target_data['is_draw_patches'] = checked
         self.ui.tiff_grid.set_show_patches(checked)
 
         # TODO: Implement show/hide patches functionality
@@ -435,6 +448,9 @@ class MainApp(QtWidgets.QMainWindow):
 
     # === TAB HANDLERS ===
     def cht_tabs_changed(self, index):
+        self.update_by_index(index)
+
+    def update_by_index(self, index):
         """CHT tabs selection changed"""
         if index < 0:
             self.update_controls()
@@ -443,24 +459,23 @@ class MainApp(QtWidgets.QMainWindow):
         cht_name = self.ui.chtTabs.tabText(index)
         self.tm.set_cht(cht_name)
 
-        self.cht_data = self.tm.get_cht_data()
-        self.image_file= self.cht_data["image_file"]
+        self.target_data = self.tm.get_cht_data()
+        if self.target_data["image_file"]:
+            self.show_preview = False
+            self.image_file = copy.copy(self.target_data["image_file"])
+        else:
+            self.show_preview = True
+            self.image_file = copy.copy(self.target_data["preview_file"])
 
-        self.patch_size =  int(self.cht_data['cht_data']['patch_size'][0]) * int(self.cht_data['cht_data']['patch_size'][1])
-        patch_scale = self.cht_data['cht_data']['patch_scale']
-        sq = int(self.patch_size * patch_scale) // 100
-        self.ui.lbl_PatchPixels.setText(f"{sq } px")
+        patch_scale = self.target_data['cht_data']['patch_scale']
         self.ui.slide_PatchScale.setValue(self.patch_scale)
 
     ## those properties must be updated back via self.cht_data
-        self.is_parsed = self.cht_data.get('is_parsed', False)
-        is_drow_patches =  self.cht_data.get('is_draw_patches', False)   # the flag suppress patch bars
-        self.is_drow_risks = self.is_parsed                                   # the flag suppress color read risks
+        self.is_parsed = self.target_data.get('is_parsed', False)
+        is_drow_patches =  self.target_data.get('is_draw_patches', False)   # the flag suppress patch bars
+        self.is_drow_risks = self.is_parsed                                 # the flag suppress color read risks
 
-        patch_keys = list(self.cht_data['cht_data']["patch_dict"].keys())
-        sorted_keys = sorted(patch_keys, key=lambda x: (re.match(r'([A-Za-z]+)(\d+)', x).groups()[0],
-                                                        int(re.match(r'([A-Za-z]+)(\d+)', x).groups()[1])))
-        self.ui.cht_grp.setTitle(f"{sorted_keys[0]}-{sorted_keys[-1]}")
+        self.ui.cht_grp.setTitle(self.target_data["file_name"])
 
         # clean image if just got is_nothing_to_drow set
         self.load_tif()
