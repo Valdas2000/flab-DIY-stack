@@ -487,15 +487,15 @@ class NewProjectDialog(QDialog):
 
             outputs = []
             if self.ui.chk_ICM.isChecked():
-                outputs.append("I")
+                outputs.append("ICC")
             if self.ui.chk_DCP.isChecked():
-                outputs.append("D")
+                outputs.append("DCP")
             if self.ui.chk_LUT.isChecked():
-                outputs.append("L")
+                outputs.append("LUT")
             if self.ui.chk_Cine.isChecked():
-                outputs.append("C")
+                outputs.append("CineOn")
             if  not markers:
-                outputs.append("")
+                outputs.append("ICC")
 
 
             self.result_data = {

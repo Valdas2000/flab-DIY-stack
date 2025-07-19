@@ -68,7 +68,6 @@ def prepare_cht_data(patches, corner):
         'corner_demo': np.array([], dtype=np.float32),      # reper pints for the demo image
         'corner': np.array([], dtype=np.float32),           # reper points
         'points': np.array([], dtype=np.float32),          # calculated patch centres
-        'half_patch': np.array([], dtype=np.float32),       # calculated path wh/2
         'patches_wh': np.array([], dtype=np.float32),       # calculated total patch
         'uv_wh': np.array([], dtype=np.float32),            # uv for patch wh
         'uv': np.array([], dtype=np.float32),               # uv for centre point

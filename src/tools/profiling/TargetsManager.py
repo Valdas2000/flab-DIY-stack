@@ -26,6 +26,7 @@ from typing import Dict, Optional, Any
 from const import GENERIC_ERROR, GENERIC_OK
 from read_cht import parse_cht_file
 from cht_data_calcs import convert_cht_to_pixels
+from raw_converter import convert_raw_batch
 
 # Qt translation support
 def get_translator():
@@ -100,6 +101,9 @@ class TargetsManager:
             "current_cht_file": "",
         }
         self.data: Dict[str, Dict[str, Any]] = {}
+        self._c_data = {}
+
+        self.conv={"ICC":"icc","DCP":"icc","LUT":"lut","CineOn":"cineon"}
 
         if create_new_project_dict:
             self.parce_init(create_new_project_dict)
@@ -110,13 +114,24 @@ class TargetsManager:
         self.header["pcl_name"] = new_project_dict["pcl_name"]
         self.header["color_ref"] = new_project_dict["color_ref"]
         self.header["remake"] = new_project_dict["remake"]
-        self.header["outputs"] = new_project_dict["outputs"]
+        self.header["outputs"] = new_project_dict["outputs"]                # the list target artifacts like ICC, LUT etc
         self.header["image_options"] = new_project_dict["image_options"]
+
+        conversions = []
+
+        for conversion in self.header["outputs"]:
+            conversions.append(self.conv[conversion])
+        if not conversions:
+            conversions.append("icc")
+
+        self.header["conversions"] = list(set(conversions))                 # the RAW conversion types need to builf the ["outputs"]
 
         cht = new_project_dict["targets"]["cht_names"]
         markers = new_project_dict["targets"]["markers"]
         for cht_name in cht:
             self.add_cht_file(cht_name,markers)
+
+        self.set_cht("")
         return True
 
 # class storage operations
@@ -131,9 +146,17 @@ class TargetsManager:
             state = pickle.load(f)
             self.header = state["header"]
             self.data = state["data"]
+            key = self.header["current_cht_file"]
+            if key not in self.data:
+                key = next(iter(self.data))
+            self._c_data = self.data[key]
 
             directory = os.path.dirname(path)
             os.chdir(directory)
+
+
+    def get_project_name(self):
+        return self.header["pcl_name"]
 
     def add_cht_file(self, cht_file: str, markers = None) ->bool:
         """Read cht file and tiff additions. Build cht_data from them,
@@ -166,7 +189,7 @@ class TargetsManager:
         image_height = s_size["height_px"]
         dpi = s_size["dpi_x"]  # default value
 
-        ret = convert_cht_to_pixels(cht_data, image_width, image_height, dpi, True)
+        ret = convert_cht_to_pixels(cht_data, image_width, image_height, dpi)
         data = {
             "image_file": None,
             "preview_file": preview_file,
@@ -196,45 +219,78 @@ class TargetsManager:
 
         return True
 
-# data access
+    def get_outputs(self):
+        """Provide the list of target artifacts of the project (ICC, LUT ....)"""
+        return self.header.get("outputs")
+
+    # data access
     def drop_cht(self) -> int:
         self.data.pop(self.header["current_cht_file"], None)
         if self.get_size() > 0:
             return self.set_cht("")
         return -1
 
+    def get_tif_demo_file(self) -> tuple[int, str]:
+        """Return path to .tif file if it exists, otherwise None"""
+        if not self._c_data:
+            print(tr("No current cht file selected"))
+            return GENERIC_ERROR,""
+        return GENERIC_OK, self._c_data["preview_file"]
+
     def is_has_tiff(self) -> bool:
-        current = self.header.get("current_cht_file")
-        if not current:
+        if not self._c_data:
             return False
-        entry = self.data.get(current)
-        return bool(entry and entry.get("image_file"))
+        return bool(self._c_data and self._c_data.get("image_file"))
+
+    def get_tif_file(self, output: str|None) -> tuple[int, str]:
+        ret, metadata = self.get_tiff_file_metadata()
+        if ret != GENERIC_OK:
+            return GENERIC_ERROR, ""
+        if not output:
+            output = metadata["file_selection"]
+        conv = self.conv.get(output,"icc")
+        metadata["file_selection"] = output
+        return GENERIC_OK, metadata["output_files"][conv]
+
+    def get_tiff_file_metadata(self) -> tuple[int,Dict[str, Any]]:
+        if not self.is_has_tiff:
+            return GENERIC_ERROR,{}
+        return GENERIC_OK, self._c_data["image_file"]
+
+    def get_current_output(self) -> tuple [int, str, int]:
+        """in case of success return GENERIC_OK. current output type, and the type index in outputs list"""
+        if not self.is_has_tiff():
+            return GENERIC_ERROR, "", -1
+        output = self._c_data["image_file"]["file_selection"]
+        if not output:
+            return GENERIC_OK, "", -1
+        return GENERIC_OK, output, self.get_outputs().index(output)
+
+    def get_tif_file_name(self):
+        if not self.is_has_tiff():
+            return GENERIC_ERROR,""
+        return GENERIC_OK, self._c_data["image_file"]["original_file"]
 
     def set_tiff(self, image_file: str) -> bool:
         try:
-            s_size = get_tiff_physical_size(image_file)
-            # Get image width and height
-            image_width = s_size["width_px"]
-            image_height = s_size["height_px"]
+            if not self._c_data:
+                print(tr("No current cht file selected"))
+                return False
+            ret, metadata = convert_raw_batch(image_file, "./", self.header["conversions"])
+            if ret != GENERIC_OK:
+                return False
 
-            target = self.header.get("current_cht_file")
-            self.data[target]["image_file"] = image_file
+            file_name = str(Path(image_file).name)
+            mdata = metadata.get(file_name)
+            if not metadata:
+                return False
+            mdata["file_selection"] = self.header["outputs"][0]
+            mdata["original_file"] = file_name
+            image_width = mdata["width"]
+            image_height = mdata["height"]
 
-            # Check bounds
-            reference_grid= self.data[target]["reference_grid"]
-            margin = 10
-            needs_fix = any(
-                x < 0 or x >= image_width or y < 0 or y >= image_height
-                for x, y in reference_grid.values()
-            )
-
-            if needs_fix:
-                reference_grid.update({
-                    'top_left': (margin, margin),
-                    'top_right': (image_width - margin, margin),
-                    'bottom_left': (margin, image_height - margin),
-                    'bottom_right': (image_width - margin, image_height - margin)
-                })
+            self._c_data["image_file"] = mdata
+            convert_cht_to_pixels(self._c_data['cht_data'],image_width,image_height)
             return True
 
         except Exception as e:
@@ -245,7 +301,7 @@ class TargetsManager:
     def get_current_cht_name(self) -> Optional[str]:
         return self.header["current_cht_file"]
 
-    def get_cht_data(self) -> Optional[dict]:
+    def get_current_cht_data(self) -> Optional[dict]:
         """Return data from current cht file
         dict {
              "image_file": Str,
@@ -258,8 +314,11 @@ class TargetsManager:
              or
              None if something went wrong
         """
-        target = self.get_current_cht_name()
-        return self.data[target]
+        return self._c_data
+
+    def get_current_cht(self):
+        return  self.header["current_cht_file"]
+
 
 # Iterations
     def next_cht(self) -> int:
@@ -271,6 +330,7 @@ class TargetsManager:
         if not current or current not in self.data:
             first_key = next(iter(self.data))
             self.header["current_cht_file"] = first_key
+            self._c_data=self.data[first_key]
             return 0
 
         keys_iter = iter(self.data.keys())
@@ -280,11 +340,11 @@ class TargetsManager:
                 try:
                     next_key = next(keys_iter)
                     self.header["current_cht_file"] = next_key
+                    self._c_data = self.data[next_key]
                     return idx + 1
                 except StopIteration:
                     # Current was the last one
                     return -1
-
         return -1
 
     def prev_cht(self) -> int:
@@ -293,6 +353,7 @@ class TargetsManager:
         if not current or current not in self.data:
             first_key = next(iter(self.data))
             self.header["current_cht_file"] = first_key
+            self._c_data=self.data[first_key]
             return 0
 
         # Find previous key in one pass
@@ -301,6 +362,7 @@ class TargetsManager:
             if key == current:
                 if prev_key is not None:
                     self.header["current_cht_file"] = prev_key
+                    self._c_data = self.data[prev_key]
                     return idx - 1
                 else:
                     # Already at first element
@@ -317,12 +379,14 @@ class TargetsManager:
 
         if not cht_name:
             self.header["current_cht_file"] = keys[0]
+            self._c_data=self.data[keys[0]]
             return 0
 
         # Fastest way - one pass through enumerate
         for idx, key in enumerate(keys):
             if key == cht_name:
                 self.header["current_cht_file"] = key
+                self._c_data = self.data[key]
                 return idx
 
         return -1

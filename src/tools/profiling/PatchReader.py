@@ -25,7 +25,6 @@ QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
 from InteractiveGraphicsView import InteractiveGraphicsView
 from TargetsManager import TargetsManager
 from patch_reader_ui import Ui_MainWindow
-from raw_converter import convert_raw_batch
 from const import GENERIC_OK
 from pick_files import  open_file_dialog, save_file_dialog
 
@@ -33,7 +32,7 @@ translator = QtCore.QTranslator()
 translator.load("PatchReader_en.qm")  # path to file
 
 class MainApp(QtWidgets.QMainWindow):
-    def __init__(self):
+    def __init__(self, pcl_file:str = None):
         super().__init__()
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -56,14 +55,16 @@ class MainApp(QtWidgets.QMainWindow):
         self.connect_signals()
 
     ## logical files
-        self.target_data = {}
-        self.image_file= ""
-        self.is_parsed = False
-        self.show_preview = True
+        self.image_file= None
+        self.disable_update = False
+        # self.is_parsed = False
 
         self.patch_scale=  100   # patch scale in percents
-
         self.update_controls()
+
+        if pcl_file:
+            self.load_project(pcl_file)
+
 
 # service functions
     def setup_global_print_redirect(self):
@@ -103,7 +104,6 @@ class MainApp(QtWidgets.QMainWindow):
         self.ui.actionNew.triggered.connect(self.action_new_pcl)
         self.ui.actionOpen.triggered.connect(self.action_open_pcl)
         self.ui.actionSave.triggered.connect(self.action_save_pcl)
-        self.ui.actionSave_As.triggered.connect(self.action_save_pcl_as)
         self.ui.actionProperties.triggered.connect(self.action_pcl_properties)
         self.ui.actionExit.triggered.connect(self.action_exit)
 
@@ -140,11 +140,14 @@ class MainApp(QtWidgets.QMainWindow):
 
         # === CHECKBOXES ===
         self.ui.chk_ShowPatches.toggled.connect(self.chk_show_patches_toggled)
+        self.ui.chk_ShowColors.toggled.connect(self.chk_show_colors_toggled)
         self.ui.chk_ShowRisks.toggled.connect(self.chk_show_risks_toggled)
-
+        self.ui.chk_showPreview.toggled.connect(self.chk_show_preview_toggled)
         # === TABS ===
         self.ui.chtTabs.currentChanged.connect(self.cht_tabs_changed)
 
+        # Lists
+        self.ui.lst_Images.itemSelectionChanged.connect(self.lst_images_changed)
         # === GRAPHICS VIEW ===
         # self.ui.tiff_grid.mouse_clicked.connect(self.graphics_mouse_clicked)
         # self.ui.tiff_grid.mouse_moved.connect(self.graphics_mouse_moved)
@@ -194,11 +197,15 @@ class MainApp(QtWidgets.QMainWindow):
         else:
             try:
                 from PIL import Image
-                image = Image.open(self.image_file)
+                if not self.image_file[0] == GENERIC_OK:
+                    return
+                image = Image.open(self.image_file[1])
+                title = self.tr("Target Preview")
+                if not self.ui.chk_showPreview.isChecked():
+                    res, path = self.tm.get_tif_file_name()
+                    title = str(Path(path).name)
                 # Convert to NumPy array
-                path = Path(self.image_file)
-                title = path.stem + path.suffix
-                self.ui.tiff_grid.set_background_image(np.array(image), self.target_data['cht_data'], self.show_preview,  self.ui.slide_Lightness.value())
+                self.ui.tiff_grid.set_background_image(np.array(image), self.tm.get_current_cht_data(), self.ui.chk_showPreview.isChecked(), self.ui.slide_Lightness.value())
                 self.ui.tiff_grp.setTitle(title)
                 self.is_nothing_to_drow = False
 
@@ -210,12 +217,28 @@ class MainApp(QtWidgets.QMainWindow):
 
         # self.update_controls()
 
+    def setup_gui_from_project(self):
+        """Fillup the project targets"""
+        outputs = self.tm.get_outputs()
+        if outputs:
+            self.ui.lst_Images.clear()
+            for output in outputs:
+                self.ui.lst_Images.addItem(output)
+            ret, out, idx = self.tm.get_current_output()
+            if ret == GENERIC_OK:
+                self.ui.chk_showPreview.setChecked(False)
+                # self.ui.lst_Images.setCurrentRow(idx)
+            else:
+                self.ui.chk_showPreview.setChecked(True)
+
 # controls management
     def update_controls(self):
         # disable all if no cht files
         if self.tm.get_size() == 0:
             self.ui.cht_grp.setEnabled(False)
             self.ui.tiff_grp.setEnabled(False)
+            self.ui.img_grp.setEnabled(False)
+            self.ui.imginfo_grp.setVisible(False)
             self.ui.btn_selectTiff.setEnabled(False)
             self.ui.actionSelect_Target.setEnabled(False)
             self.ui.actionRead_Patches.setEnabled(False)
@@ -234,6 +257,19 @@ class MainApp(QtWidgets.QMainWindow):
         self.ui.actionRead_Patches.setEnabled(set_enabled)
         self.ui.actionReset_Grid.setEnabled(set_enabled)
 
+        # check current state
+        is_not_preview_mode = not self.ui.chk_showPreview.isChecked()
+                                                                 # in preview mode
+        self.ui.imginfo_grp.setVisible(is_not_preview_mode)     # hide image info
+        self.ui.btn_rotCCW.setEnabled(is_not_preview_mode)       # disable grid rotations
+        self.ui.btn_rotCW.setEnabled(is_not_preview_mode)
+        self.ui.btn_ResetGrid.setEnabled(is_not_preview_mode)    # disable grid reset
+
+        having_tiff = self.tm.is_has_tiff()
+        self.ui.img_grp.setEnabled(having_tiff)
+        self.ui.display_grp.setEnabled(having_tiff)         # enable image selection group
+        self.ui.btn_ReadPatches.setEnabled(having_tiff)     # enable read patches
+
     # === MENU ACTION HANDLERS ===
     def action_new_pcl(self):
         from create_new_project import create_new_project
@@ -243,50 +279,52 @@ class MainApp(QtWidgets.QMainWindow):
             return
         self.tm = TargetsManager(data)
         self.tm.save()
-
+        self.disable_update = True
         path = os.getcwd()
-        progect = self.tm.header["pcl_name"]
-        full_path = os.path.join(path, progect)
+        project = self.tm.header["pcl_name"]
+        full_path = os.path.join(path, project)
         self.setWindowTitle("PatchReader " + str(full_path))
-
         self.is_nothing_to_drow = True
+        self.setup_gui_from_project()
         self.rebuild_tabs()
-        self.update_controls()
-        self.generate_empty_image()
+
+        index = self.ui.chtTabs.currentIndex()
+        self.disable_update = False
+        self.update_by_index(index)
         self.log(self.tr("New PCL created"))
 
     def action_open_pcl(self):
         file_path = open_file_dialog('pcl')
-        if file_path:
-            self.tm.load(file_path)
-            self.rebuild_tabs()
-            index = self.ui.chtTabs.currentIndex()
-            self.update_by_index(index)
+        self.load_project(file_path)
         return
 
+    def load_project(self, file_path):
+        if file_path:
+            self.is_nothing_to_drow = True
+            self.tm.load(str(file_path))
+            self.setWindowTitle("PatchReader " + str(file_path))
+            self.disable_update = True
+            self.setup_gui_from_project()
+            self.rebuild_tabs()
+            index = self.ui.chtTabs.currentIndex()
+
+            self.disable_update = False
+            self.update_by_index(index)
+            self.log(self.tr("Project opened"))
+        return
+
+
     def action_save_pcl(self):
-        pcl_name = self.tm.header["pcl_file"]
+        pcl_name = self.tm.get_project_name()
         if not pcl_name:
-            pcl_name = save_file_dialog("pcl")
+            # pcl_name = save_file_dialog("pcl")
             if not pcl_name:
-                self.log(self.tr("Save operation canceled"))
+                self.log(self.tr("Save operation canceled. "))
                 return
             self.log(f"PCL name: {pcl_name}")
 
-        self.tm.save_as(pcl_name)
-        self.setWindowTitle(f"PatchReader ({pcl_name})")
-        self.log(self.tr("PCL saved"))
-
-    def action_save_pcl_as(self):
-        pcl_name = self.tm.header["pcl_file"]
-        pcl_name = save_file_dialog("pcl", pcl_name)
-        if not pcl_name:
-            self.log(self.tr("Save operation canceled"))
-            return
-        self.log(f"PCL name: {pcl_name}")
-        self.tm.save_as(pcl_name)
-        self.setWindowTitle(f"PatchReader ({pcl_name})")
-        self.log(self.tr("PCL saved"))
+        self.tm.save()
+        self.log(self.tr("Project saved"))
 
     def action_pcl_properties(self):
         """Show PCL properties dialog"""
@@ -397,14 +435,16 @@ class MainApp(QtWidgets.QMainWindow):
 
     def btn_select_tiff_clicked(self):
         """Select TIFF button clicked"""
-        file_path = open_file_dialog('raw', self.image_file)
+        file_path = open_file_dialog('raw', "")
         if not file_path:
             self.log(self.tr("Open TIFF canceled"))
             return
-        metadata = convert_raw_batch
-        self.image_file = file_path
-        self.load_tif()
-        self.update_controls()
+        if not self.tm.set_tiff(file_path):
+            return
+
+        # rebuild controls
+        index = self.ui.chtTabs.currentIndex()
+        self.update_by_index(index)
 
     def btn_read_patches_clicked(self):
         """Read Patches button clicked"""
@@ -429,17 +469,41 @@ class MainApp(QtWidgets.QMainWindow):
         self.ui.lbl_PatchPersents.setText(f"{value}%")
         if self.patch_scale != value:
             self.patch_scale = value
-            if not self.show_preview:
-                self.target_data['cht_data']['patch_scale'] = value
+            if not self.ui.chk_showPreview.isChecked():
+                self.tm.get_current_cht_data()['patch_scale'] = value
             self.ui.tiff_grid.set_patch_scale(value)
 
     # === CHECKBOX HANDLERS ===
     def chk_show_patches_toggled(self, checked):
         """Show Patches checkbox toggled"""
-        self.target_data['is_draw_patches'] = checked
+        self.tm.get_current_cht_data()['is_draw_patches'] = checked
         self.ui.tiff_grid.set_show_patches(checked)
 
         # TODO: Implement show/hide patches functionality
+
+    def chk_show_colors_toggled(self, checked):
+        """Show Patches checkbox toggled"""
+        self.tm.get_current_cht_data()['is_draw_colors'] = checked
+        self.ui.tiff_grid.set_show_colors(checked)
+
+    def chk_show_preview_toggled(self, checked):
+        """Show Preview checkbox toggled"""
+        disable_update = self.disable_update
+        self.disable_update = True
+        if checked:
+            self.ui.lst_Images.setCurrentRow(-1)
+            self.image_file =self.tm.get_tif_demo_file()
+        else:
+            res, lbl, idx = self.tm.get_current_output()
+            self.ui.lst_Images.setCurrentRow(idx)
+            self.image_file = self.tm.get_tif_file(lbl)
+
+        if not disable_update:
+            self.load_tif()
+            self.update_controls()
+
+        self.disable_update = False
+        self.disable_update = disable_update
 
     def chk_show_risks_toggled(self, checked):
         """Show Risks checkbox toggled"""
@@ -452,36 +516,86 @@ class MainApp(QtWidgets.QMainWindow):
 
     def update_by_index(self, index):
         """CHT tabs selection changed"""
+        disable_update = self.disable_update
+        self.disable_update = True
+
+        self.image_file = None
         if index < 0:
             self.update_controls()
             return
 
+        # update targets manager
         cht_name = self.ui.chtTabs.tabText(index)
         self.tm.set_cht(cht_name)
 
-        self.target_data = self.tm.get_cht_data()
-        if self.target_data["image_file"]:
-            self.show_preview = False
-            self.image_file = copy.copy(self.target_data["image_file"])
-        else:
-            self.show_preview = True
-            self.image_file = copy.copy(self.target_data["preview_file"])
+        self.ui.cht_grp.setTitle(self.tm.get_current_cht_name())
 
-        patch_scale = self.target_data['cht_data']['patch_scale']
+        if self.tm.is_has_tiff():
+            ret, name, idx = self.tm.get_current_output()
+            if idx == -1:
+                self.ui.chk_showPreview.setChecked(True)
+                self.image_file = self.tm.get_tif_demo_file()
+            else:
+                self.ui.chk_showPreview.setChecked(False)
+                self.ui.lst_Images.setCurrentRow(idx)
+                self.image_file = self.tm.get_tif_file(name)
+
+                # update target into
+                res, md = self.tm.get_tiff_file_metadata()
+                self.ui.lbl_Camera.setText(md.get("camera_model", ''))
+                self.ui.lbl_Temp.setText(str(md.get('WB', '')))
+                lbl = "{}s F{}".format(md.get("exposure_time", ''), md.get("f_number", ''))
+                self.ui.lbl_Exposure.setText(lbl)
+                self.ui.lbl_Filmscan.setText(md.get('is_negative', ''))
+        else:
+            self.ui.chk_showPreview.setChecked(True)
+            self.image_file = self.tm.get_tif_demo_file()
+
+        cht_data = self.tm.get_current_cht_data()
+        patch_scale = cht_data.get('patch_scale', 100)
         self.ui.slide_PatchScale.setValue(self.patch_scale)
 
-    ## those properties must be updated back via self.cht_data
-        self.is_parsed = self.target_data.get('is_parsed', False)
-        is_drow_patches =  self.target_data.get('is_draw_patches', False)   # the flag suppress patch bars
+        ## those properties must be updated back via self.cht_data
+        is_drow_patches =  cht_data.get('is_draw_patches', False)   # the flag suppress patch bars
+        self.is_parsed = cht_data.get('is_parsed', False)
         self.is_drow_risks = self.is_parsed                                 # the flag suppress color read risks
 
-        self.ui.cht_grp.setTitle(self.target_data["file_name"])
-
         # clean image if just got is_nothing_to_drow set
-        self.load_tif()
         self.ui.chk_ShowPatches.setChecked(is_drow_patches)
         self.ui.slide_PatchScale.setValue(patch_scale)
-        self.update_controls()
+
+        if not disable_update:
+            self.load_tif()
+            self.update_controls()
+
+        self.disable_update = False
+        self.disable_update = disable_update
+
+    def lst_images_changed(self):
+        """List of images selection changed"""
+        index = self.ui.lst_Images.currentRow()
+        self._lst_image_changsd(index)
+        return
+
+    def _lst_image_changsd(self, index):
+        disable_update = self.disable_update
+        self.disable_update = True
+
+        if index < 0:
+            self.image_file = self.tm.get_tif_demo_file()
+        else:
+            if self.ui.chk_showPreview.isChecked():
+                self.ui.chk_showPreview.setChecked(False)
+            lbl_text = self.ui.lst_Images.item(index).text()
+            self.image_file = self.tm.get_tif_file(lbl_text)
+
+        if not disable_update:
+            self.load_tif()
+            self.update_controls()
+
+        self.disable_update = False
+        self.disable_update = disable_update
+
 
     # === GRAPHICS VIEW HANDLERS ===
     def graphics_mouse_clicked(self, point):
@@ -515,7 +629,22 @@ def main():
     try:
         app = QtWidgets.QApplication(sys.argv)
         app.installTranslator(translator)
-        window = MainApp()
+
+        window = None
+        if len(sys.argv) > 1:
+            file_path = Path(sys.argv[1])
+
+            if file_path.exists():
+                if file_path.is_dir():
+                    # Это директория - проверяем файл имя_директории.pcl
+                    pcl_file = file_path / f"{file_path.name}.pcl"
+                    if pcl_file.exists():
+                        window = MainApp(str(pcl_file))
+                else:
+                    if file_path.suffix.lower() == '.pcl':
+                        window = MainApp(str(file_path))
+        else:
+            window = MainApp()
         window.show()
 
     except Exception as e:

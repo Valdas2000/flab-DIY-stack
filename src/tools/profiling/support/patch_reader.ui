@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>968</width>
-    <height>749</height>
+    <width>963</width>
+    <height>816</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -42,18 +42,8 @@
        </size>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>-1</number>
       </property>
-      <widget class="QWidget" name="tab">
-       <attribute name="title">
-        <string>Tab 1</string>
-       </attribute>
-      </widget>
-      <widget class="QWidget" name="tab_2">
-       <attribute name="title">
-        <string>Tab 2</string>
-       </attribute>
-      </widget>
      </widget>
     </item>
     <item>
@@ -165,7 +155,7 @@
              <item alignment="Qt::AlignHCenter">
               <widget class="QGroupBox" name="cht_grp">
                <property name="sizePolicy">
-                <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+                <sizepolicy hsizetype="Maximum" vsizetype="Expanding">
                  <horstretch>0</horstretch>
                  <verstretch>0</verstretch>
                 </sizepolicy>
@@ -392,7 +382,14 @@
                   </property>
                  </widget>
                 </item>
-                <item row="16" column="0" colspan="2">
+                <item row="11" column="0">
+                 <widget class="QCheckBox" name="chk_ShowColors">
+                  <property name="text">
+                   <string>Show Colors</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="17" column="0" colspan="2">
                  <widget class="QPushButton" name="btn_ResetGrid">
                   <property name="minimumSize">
                    <size>
@@ -442,11 +439,25 @@
                   </property>
                  </widget>
                 </item>
+                <item row="16" column="0">
+                 <widget class="QPushButton" name="btn_FlipH">
+                  <property name="text">
+                   <string>Flip Vert</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="16" column="1">
+                 <widget class="QPushButton" name="btn_FlipV">
+                  <property name="text">
+                   <string>Flip Hor</string>
+                  </property>
+                 </widget>
+                </item>
                </layout>
               </widget>
              </item>
              <item alignment="Qt::AlignBottom">
-              <widget class="QGroupBox" name="grp_Image">
+              <widget class="QGroupBox" name="img_grp">
                <property name="sizePolicy">
                 <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
                  <horstretch>0</horstretch>
@@ -456,7 +467,7 @@
                <property name="minimumSize">
                 <size>
                  <width>0</width>
-                 <height>150</height>
+                 <height>160</height>
                 </size>
                </property>
                <property name="title">
@@ -476,16 +487,16 @@
                  <number>0</number>
                 </property>
                 <item alignment="Qt::AlignTop">
-                 <widget class="QGroupBox" name="grp_Display">
+                 <widget class="QGroupBox" name="display_grp">
                   <property name="minimumSize">
                    <size>
-                    <width>100</width>
-                    <height>130</height>
+                    <width>80</width>
+                    <height>140</height>
                    </size>
                   </property>
                   <property name="maximumSize">
                    <size>
-                    <width>100</width>
+                    <width>80</width>
                     <height>120</height>
                    </size>
                   </property>
@@ -529,7 +540,7 @@
                  </widget>
                 </item>
                 <item alignment="Qt::AlignTop">
-                 <widget class="QGroupBox" name="grp_ImageInfo">
+                 <widget class="QGroupBox" name="imginfo_grp">
                   <property name="sizePolicy">
                    <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
                     <horstretch>0</horstretch>
@@ -538,7 +549,7 @@
                   </property>
                   <property name="minimumSize">
                    <size>
-                    <width>100</width>
+                    <width>120</width>
                     <height>120</height>
                    </size>
                   </property>
@@ -706,7 +717,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>968</width>
+     <width>963</width>
      <height>22</height>
     </rect>
    </property>

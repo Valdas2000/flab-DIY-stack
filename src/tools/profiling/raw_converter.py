@@ -8,7 +8,7 @@ import numpy as np
 from pathlib import Path
 from typing import List, Union, Optional, Dict, Tuple
 import glob
-from const import GENERIC_ERROR, NEGATIVE_FILM, POSITIVE_FILM
+from const import GENERIC_ERROR, GENERIC_OK, NEGATIVE_FILM, POSITIVE_FILM
 
 # Qt translation support
 def get_translator():
@@ -283,7 +283,7 @@ def convert_raw_batch(
 
     Returns:
         Tuple[int, Dict[str, Dict[str, any]]]:
-            - First element: number of processed files (int) or GENERIC_ERROR on error
+            - First element: GENERIC_OK or GENERIC_ERROR on error
             - Second element: dictionary {filename: metadata_dict}
 
         Return dictionary structure:
@@ -481,7 +481,7 @@ def convert_raw_batch(
 
     # SUCCESS: all files processed
     print(tr("Processed files: {}").format(processed_count))
-    return processed_count, ret
+    return GENERIC_OK, ret
 
 def cleanup_failed_files(created_files: List[Path], result_files: Dict[str, List[str]]):
     """
