@@ -1,8 +1,10 @@
+import sys
 import subprocess
 from typing import List, Optional, Callable
-from PyQt5.QtCore import QThread, pyqtSignal, QTimer
-from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLabel, QProgressBar, QApplication
-from PyQt5.QtCore import Qt
+from PySide6.QtCore import QThread, QTimer
+from PySide6.QtCore import Signal as pyqtSignal
+from PySide6.QtWidgets import QDialog, QVBoxLayout, QLabel, QProgressBar, QApplication
+from PySide6.QtCore import Qt
 
 
 class BackgroundProcessThread(QThread):
@@ -10,18 +12,21 @@ class BackgroundProcessThread(QThread):
     finished = pyqtSignal(int, str, str)  # return_code, stdout, stderr
     error = pyqtSignal(str)
 
-    def __init__(self, cmd: List[str], timeout: int = 300):
+    def __init__(self, cmd: List[str], timeout: int = 300, stdin_handle = None):
         super().__init__()
         self.cmd = cmd
         self.timeout = timeout
+        self.stdin_handle = stdin_handle
 
     def run(self):
         try:
             result = subprocess.run(
                 self.cmd,
+                shell=True,
                 capture_output=True,
                 text=True,
-                timeout=self.timeout
+                timeout=self.timeout,
+                stdin = self.stdin_handle  or sys.stdin
             )
             self.finished.emit(result.returncode, result.stdout, result.stderr)
         except subprocess.TimeoutExpired:
@@ -94,6 +99,8 @@ class BackgroundProcessManager:
         self.thread = None
         self.dialog = None
         self.is_runing = False
+        self.use_loading_dialog = True
+        self.stdin_handle = None
 
     def execute_command(
             self,
@@ -116,19 +123,20 @@ class BackgroundProcessManager:
         self.is_runing = True
 
         # Create and show loading dialog
-        self.dialog = LoadingDialog(message, self.parent)
-        self.dialog.show()
-        QApplication.processEvents()
+        if self.use_loading_dialog:
+            self.dialog = LoadingDialog(message, self.parent)
+            self.dialog.show()
+            QApplication.processEvents()
 
         # Create and start thread
-        self.thread = BackgroundProcessThread(cmd, timeout)
+        self.thread = BackgroundProcessThread(cmd, timeout, self.stdin_handle)
         self.thread.finished.connect(lambda rc, stdout, stderr: self._on_finished(rc, stdout, stderr, on_success))
         self.thread.error.connect(lambda error: self._on_error(error, on_error, timeout))
         self.thread.start()
 
     def _on_finished(self, return_code: int, stdout: str, stderr: str, callback: Optional[Callable]):
         """Handle thread completion."""
-        if self.dialog:
+        if self.use_loading_dialog and self.dialog:
             self.dialog.close()
             self.dialog = None
 
@@ -139,7 +147,7 @@ class BackgroundProcessManager:
 
     def _on_error(self, error: str, callback: Optional[Callable], timeout: int):
         """Handle thread error."""
-        if self.dialog:
+        if self.use_loading_dialog and self.dialog:
             self.dialog.close()
             self.dialog = None
 

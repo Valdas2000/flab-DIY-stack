@@ -14,7 +14,7 @@ from const import GENERIC_ERROR, GENERIC_OK, NEGATIVE_FILM, POSITIVE_FILM
 def get_translator():
     """Get Qt translator function"""
     try:
-        from PyQt5.QtWidgets import QApplication
+        from PySide6.QtWidgets import QApplication
         app = QApplication.instance()
         if app:
             return lambda text, context="RawConverter": app.translate(context, text)
@@ -53,9 +53,52 @@ def sanitize_filename(text):
     return result
 
 
-import rawpy
-import exiv2
+def _is_valid_multipliers(r_mul, g_mul, b_mul):
+    """Проверка multipliers на разумность"""
+    try:
+        # Нормализация
+        r_norm = r_mul / g_mul
+        b_norm = b_mul / g_mul
 
+        # Проверка диапазонов (типичные значения 0.5-4.0)
+        if not (0.3 < r_norm < 5.0 and 0.3 < b_norm < 5.0):
+            return False
+
+        # Проверка что каналы не равны (признак битых данных)
+        if abs(r_norm - 1.0) < 0.1 and abs(b_norm - 1.0) < 0.1:
+            return False
+
+        return True
+
+    except (ZeroDivisionError, TypeError):
+        return False
+
+
+def _calculate_wb_data(r_mul, g_mul, b_mul, raw_multipliers, source, confidence):
+    """Вычисление данных WB из multipliers"""
+
+    # Нормализация по G каналу
+    r_norm = float(r_mul) / g_mul
+    b_norm = float(b_mul) / g_mul
+    ratio = r_norm / b_norm
+
+    # Расчет температуры (существующий алгоритм)
+    if ratio > 1.0:
+        temperature = int(6500 / (ratio ** 0.6))
+    else:
+        temperature = int(6500 * (1.0 / ratio) ** 0.4)
+
+    # Ограничение диапазона
+    temperature = max(2000, min(12000, temperature))
+
+    return {
+        'temperature': temperature,
+        'multipliers': [r_norm, 1.0, b_norm],
+        'raw_multipliers': list(raw_multipliers[:3]),
+        'ratio': ratio,
+        'source': source,
+        'confidence': confidence
+    }
 
 def get_extended_metadata(raw_file_path: Path) -> Dict[str, Union[str, float, int, None]]:
     """
@@ -114,39 +157,53 @@ def get_extended_metadata(raw_file_path: Path) -> Dict[str, Union[str, float, in
                 return default
 
         def get_WB(image_path, default=0):
-            #temperature_tags = [
-              #  'Exif.CanonPr.ColorTemperature',
-              #  'Exif.Canon.ColorTemperature',
-              #  'Exif.Nikon3.ColorTemperature',
-              #  'Exif.Sony1.ColorTemperature',
-              #  'Exif.Panasonic.ColorTemperature',
-              #  'Exif.Olympus.ColorTemperature',
-              #  'Exif.Fujifilm.ColorTemperature',
-            #]
+            """
+            Извлекает данные баланса белого из RAW файла.
 
-            #for item in exif_data:
-            #    key = item.key()
-            #    if key in temperature_tags:
-            #        return int(str(item.value()))
+            Returns:
+                dict: Словарь с данными WB или пустой dict при неудаче
+                {
+                    'temperature': int,           # CCT в Kelvin (2000-12000)
+                    'multipliers': [float, float, float],  # [R, G, B] нормализованные
+                    'raw_multipliers': [float, float, float],  # Исходные значения
+                    'ratio': float,               # R/B соотношение
+                    'source': str,               # 'camera_wb' | 'daylight_wb' | 'default'
+                    'confidence': str            # 'high' | 'medium' | 'low'
+                }
+            """
+            try:
+                with rawpy.imread(str(image_path)) as raw:
+                    # Попытка 1: camera_whitebalance (основной)
+                    cam_mul = raw.camera_whitebalance
 
-            cam_mul = rawpy.imread(str(image_path)).camera_whitebalance
+                    if (cam_mul is not None and len(cam_mul) >= 3 and
+                            all(x > 0 for x in cam_mul[:3])):
 
-            if (cam_mul is not None and len(cam_mul) >= 3 and
-                    all(x > 0 for x in cam_mul[:3])):  # Проверяем все значения сразу
+                        r_mul, g_mul, b_mul = cam_mul[0], cam_mul[1], cam_mul[2]
 
-                r_mul, g_mul, b_mul = cam_mul[0], cam_mul[1], cam_mul[2]
-                r_norm = float(r_mul) / g_mul
-                b_norm = float(b_mul) / g_mul
-                ratio = r_norm / b_norm
+                        # Проверка на разумность данных
+                        if _is_valid_multipliers(r_mul, g_mul, b_mul):
+                            return _calculate_wb_data(r_mul, g_mul, b_mul,
+                                                      cam_mul, 'camera_wb', 'high')
 
-                if ratio > 1.0:
-                    temperature = int(6500 / (ratio ** 0.6))
-                else:
-                    temperature = int(6500 * (1.0 / ratio) ** 0.4)
+                    # Попытка 2: daylight_whitebalance (запасной)
+                    day_mul = raw.daylight_whitebalance
 
-                return max(2000, min(12000, temperature))
-            return 0
+                    if (day_mul is not None and len(day_mul) >= 3 and
+                            all(x > 0 for x in day_mul[:3])):
 
+                        r_mul, g_mul, b_mul = day_mul[0], day_mul[1], day_mul[2]
+
+                        if _is_valid_multipliers(r_mul, g_mul, b_mul):
+                            return _calculate_wb_data(r_mul, g_mul, b_mul,
+                                                      day_mul, 'daylight_wb', 'medium')
+
+                    # Попытка 3: Значения по умолчанию (D65)
+                    return {}
+
+            except Exception as e:
+                print(f"Warning: Ошибка чтения RAW файла {image_path}: {e}")
+                return {}  # Пустой dict при полном провале
 
         metadata = {
             # Basic camera info
@@ -269,7 +326,7 @@ def format_shutter_speed_for_filename(shutter_speed):
 def convert_raw_batch(
         input_files: Union[str, List[str]],
         output_dir: str = "",
-        modes: Union[str, List[str]] = "icc",
+        modes: Union[str, List[str]] = "ICC",
         demosaic_algorithm=rawpy.DemosaicAlgorithm.AHD,
 ) -> Tuple[int, Dict[str, Dict[str, any]]]:
     """
@@ -531,7 +588,7 @@ def convert_raw(
                 fbdd_noise_reduction=rawpy.FBDDNoiseReductionMode.Off  # OFF
             )
 
-        elif mode == "icc":
+        elif mode == "ICC":
             # For ICC profile: maximum "raw" output
             rgb = raw.postprocess(
                 gamma=(1.0, 1.0),  # linear gamma
@@ -549,26 +606,73 @@ def convert_raw(
                 median_filter_passes=0
             )
 
-
-        elif mode == "lut":
-            # For LUT: basic processing
+        elif mode == "DCP":
             rgb = raw.postprocess(
-                gamma=(2.2, 4.5),  # standard sRGB gamma
-                no_auto_bright=False,
+                gamma=(1.0, 1.0),  # linear gamma
+                no_auto_bright=True,  # no auto-brightness
                 output_bps=16,
+                output_color=rawpy.ColorSpace.raw,
+                use_camera_wb=False,
+                use_auto_wb=False,
+                demosaic_algorithm=demosaic_algorithm,
+                bright=1.0,
+                four_color_rgb=False,
+                dcb_iterations=0,
+                dcb_enhance=False,
+                fbdd_noise_reduction=rawpy.FBDDNoiseReductionMode.Off,  # OFF
+                median_filter_passes=0,
+
+                # maximal ArgyllCMS compatibility:
+                user_wb=[1.0, 1.0, 1.0, 1.0],  # No channal multiplexors
+                user_black=None,  # Black Level Auto
+                user_sat=None,  # Автоматический уровень насыщения
+                noise_thr=None,  # No noize reduction
+                chromatic_aberration=(1.0, 1.0),  # No abirations corrections
+                bad_pixels_path=None  # Без коррекции битых пикселей
+            )
+
+        elif mode == "LUT":
+            # For LUT: basic processing
+            #rgb = raw.postprocess(
+            #    gamma=(2.2, 4.5),  # standard sRGB gamma
+            #    no_auto_bright=False,
+            #    output_bps=16,
+            #    output_color=rawpy.ColorSpace.sRGB,
+            #    use_camera_wb=True,
+            #    demosaic_algorithm=demosaic_algorithm
+            #)
+            # Luminar Neo oriented
+            rgb = raw.postprocess(
+                gamma=(2.2, 2.2),  #  dcraw
+                no_auto_bright=False,  # dcraw  auto-brightness
+                output_bps=16,  # (dcraw usually 8-bit but Luminar claims 16)
                 output_color=rawpy.ColorSpace.sRGB,
                 use_camera_wb=True,
                 demosaic_algorithm=demosaic_algorithm
             )
 
-        elif mode == "cineon":
-            # For LUT under Cineon: log-gamma + linear range
+        elif mode == "CLG":
+            # DXO Style
             rgb = raw.postprocess(
-                gamma=(0.6, 0),  # approximate Cineon gamma
+                gamma=(1.0, 1.0),  # Линейная гамма!
                 no_auto_bright=True,
                 output_bps=16,
-                output_color=rawpy.ColorSpace.Adobe,
-                use_camera_wb=True,
+                output_color=rawpy.ColorSpace.ProPhoto,  # Широкий gamut
+                use_camera_wb=False,  # Нейтральный WB
+                demosaic_algorithm=demosaic_algorithm
+            )
+
+
+        elif mode == "Cineon":
+            # For LUT under Cineon: log-gamma + linear range
+            rgb = raw.postprocess(
+                # gamma=(0.6, 0),  # approximate Cineon gamma
+                gamma=(1.0, 0),  # Linear gamma для scene-referred
+                no_auto_bright=True,
+                output_bps=16,
+                # output_color=rawpy.ColorSpace.Adobe,
+                output_color=rawpy.ColorSpace.ProPhoto,  # Wider gamut
+                use_camera_wb=False,
                 demosaic_algorithm=demosaic_algorithm
             )
 

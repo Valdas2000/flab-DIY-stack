@@ -20,6 +20,8 @@ import copy
 import re
 import os
 from pathlib import Path
+
+import numpy as np
 from PIL import Image
 from typing import Dict, Optional, Any
 
@@ -27,12 +29,14 @@ from const import GENERIC_ERROR, GENERIC_OK
 from read_cht import parse_cht_file
 from cht_data_calcs import convert_cht_to_pixels
 from raw_converter import convert_raw_batch
+from patch_analyse import analyze_patches
+from patch_calcs import evaluate_patches_quality
 
 # Qt translation support
 def get_translator():
     """Get Qt translator function"""
     try:
-        from PyQt5.QtWidgets import QApplication
+        from PySide6.QtWidgets import QApplication
         app = QApplication.instance()
         if app:
             return lambda text, context="RawConverter": app.translate(context, text)
@@ -103,7 +107,7 @@ class TargetsManager:
         self.data: Dict[str, Dict[str, Any]] = {}
         self._c_data = {}
 
-        self.conv={"ICC":"icc","DCP":"icc","LUT":"lut","CineOn":"cineon"}
+        self.conv={"ICC":"ICC","DCP":"DCP","LUT":"LUT","Cineon":"Cineon"}
 
         if create_new_project_dict:
             self.parce_init(create_new_project_dict)
@@ -257,6 +261,35 @@ class TargetsManager:
             return GENERIC_ERROR,{}
         return GENERIC_OK, self._c_data["image_file"]
 
+    def is_fiff_parsed(self):
+        return self._c_data.get("is_parsed", False)
+
+    def get_tif_patches_quality(self, flow):
+        if not self.is_fiff_parsed():
+            return GENERIC_ERROR,[]
+        internal_flow_name = self.conv.get(flow,"")
+        if internal_flow_name:
+            metadata = self.get_tiff_file_metadata()[1]
+            return GENERIC_OK, metadata["patches_quality"].get(internal_flow_name, [])
+        print(tr("Unknown flow type: {0}").format(flow))
+        return GENERIC_ERROR,[]
+
+    def get_tif_patches_quality_byId(self, flow_id):
+        if not self.is_fiff_parsed():
+            return GENERIC_ERROR,[]
+        flow = ""
+        internal_flow_name = ""
+        try:
+            flow = self.header["outputs"][flow_id]
+            internal_flow_name = self.conv.get(flow,"")
+            metadata = self.get_tiff_file_metadata()[1]
+            return GENERIC_OK, metadata["patches_quality"][internal_flow_name]
+        except KeyError:
+            print(tr("Unknown flow type: {0}").format(internal_flow_name))
+        except IndexError:
+            print(tr("Index value {0} is out of scope").format(flow_id))
+        return GENERIC_ERROR,[]
+
     def get_current_output(self) -> tuple [int, str, int]:
         """in case of success return GENERIC_OK. current output type, and the type index in outputs list"""
         if not self.is_has_tiff():
@@ -394,3 +427,48 @@ class TargetsManager:
     # total number of records in data
     def get_size(self) -> int:
         return len(self.data)
+
+    def read_analyse_current_cht(self):
+        if not self.is_has_tiff():
+            return GENERIC_ERROR, ""
+        points = self._c_data["cht_data"]["points"]
+        wh = self._c_data["cht_data"]["patch_wh"]
+        metadata = self.get_tiff_file_metadata()[1]
+        files = metadata["output_files"]
+        rez, read_data = analyze_patches(points, wh, files)
+        if rez == GENERIC_OK:
+            metadata["patches"] = read_data
+            # analyze patches quality
+            patches_quality={}
+            for key, data in read_data.items():
+                rez, qa = evaluate_patches_quality(data, key)
+                patches_quality[key]=qa
+            metadata["patches_quality"] = patches_quality
+
+            self._c_data["is_parsed"] = True
+        else:
+            self._c_data["is_parsed"] = False
+
+        return rez
+
+    def get_patches_current_cht(self, flow):
+        metadata = self.get_tiff_file_metadata()[1]
+        return metadata["patches"][flow]
+
+    # the function is to be enhanced to multitarget
+    def get_patch_map_current_cht(self, flow):
+        patches = self.get_patches_current_cht(flow)
+        patch_dict = self.get_current_cht_data()["cht_data"]["patch_dict"]
+        rez = {}
+        try:
+            for key, p_info in patch_dict.items():
+                idx = p_info["array_idx"]
+                rez[key] = {
+                    "xyz": p_info["xyz"],
+                    'mean_rgb': patches[idx]['mean_rgb'],
+                    'median_rgb': patches[idx]['median_rgb'],
+                }
+        except KeyError:
+            print(tr("Unknown flow type: {0}").format(flow))
+        return rez
+

@@ -1,3 +1,8 @@
+# ПProfile check by TI3
+# r g b
+# "22.59403 22.59403 22.59403" | xicclu -ir -pl -s255 your_profile.icc
+# xyz_to_lab(X, Y, Z, wp='D50')
+# xicclu -v0 -ir -pl -s255 FOMEI_Baryta_MONO_290_PIXMA_G540_PPPL_HQ_RB4.icm  < rgb_ref.txt
 import time
 import os
 import shutil
@@ -5,20 +10,17 @@ import re
 import glob
 import datetime
 from typing import Dict, Optional, Tuple
-from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel,
+from PySide6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel,
                              QComboBox, QTextEdit, QPushButton, QFileDialog,
                              QMessageBox, QApplication, QCheckBox)
-from PyQt5.QtCore import Qt, pyqtSignal
+from PySide6.QtCore import Qt
+from PySide6.QtCore import Signal as pyqtSignal
 from const import GENERIC_OK, GENERIC_CANCEL, GENERIC_ERROR
 from create_project_dlg_ui import Ui_CreateProject_dlg
 from background_process import BackgroundProcessManager
 from pathlib import Path
 from locate_argyl import get_argyll_directory
-
-
-# Enable High-DPI scaling
-QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
-QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
+from pick_files import open_file_dialog
 
 # Configuration
 MAX_GENERATIONS = 30  # Maximum number of generation attempts
@@ -52,7 +54,7 @@ TEMPLATES = {
         "make_type": NEW_GENERATE_FROM_SCRATCH,
         "type": "rgb",
         "targen_args": "-v -d3 -G -g160 -e25 -f480",
-        "printtarg_args": "-v -h -i i1 -p 210x148 -M 2 -C -L -S -a 1.07 -b -T 610",
+        "printtarg_args": "-v -h -i i1 -p 148x210 -M 2 -C -L -S -a 1.08 -b -T 610",
         "criteria": {"direction_min": 20, "direction_max": float('inf'), "worst_max": 3},
         "negative_expected": False
     },
@@ -60,7 +62,7 @@ TEMPLATES = {
         "make_type": NEW_GENERATE_FROM_SCRATCH,
         "type": "rgb",
         "targen_args": "-v -d3 -G -g180 -e25 -f720",
-        "printtarg_args": "-v -h -i i1 -p 220x148 -M 2 -C -L -S -a 1.07 -b -T 610",
+        "printtarg_args": "-v -h -i i1 -p 148x210 -M 2 -C -L -S -a 1.08 -b -T 610",
         "criteria": {"direction_min": 20, "direction_max": float('inf'), "worst_max": 3},
         "negative_expected": False,
         "portrait": False
@@ -69,7 +71,7 @@ TEMPLATES = {
         "make_type": NEW_GENERATE_FROM_SCRATCH,
         "type": "rgb",
         "targen_args": "-v -d3 -G -g200 -e30 -f960",
-        "printtarg_args": "-v -h -i i1 -p 220x148 -M 2 -C -L -S -a 1.07 -b -T 610",
+        "printtarg_args": "-v -h -i i1 -p 148x210 -M 2 -C -L -S -a 1.08 -b -T 610",
         "criteria": {"direction_min": 20, "direction_max": float('inf'), "worst_max": 3},
         "negative_expected": False,
         "portrait": False
@@ -268,18 +270,18 @@ class NewProjectDialog(QDialog):
         """Setup signal connections."""
 
         # Common controls
-        self.ui.btn_select_path.clicked.connect(self.on_select_path_clicked)
+        self.ui.btn_select_path.clicked.connect(self.select_project_path)
         self.ui.create_button.clicked.connect(self.on_create_clicked)
         self.ui.cancel_button.clicked.connect(self.reject)
 
 
         # New Targets Tab
-        self.ui.template_combo.currentTextChanged.connect(self.on_template_changed)
+        # self.ui.template_combo.currentTextChanged.connect(self.on_template_changed)
         self.ui.template_combo.currentIndexChanged.connect(self.on_template_changed)  # Добавляем второй сигнал
 
         # Import Targets
-        self.ui.btn_select_cht.clicked.connect(self.on_select_cht_clicked)
-        self.ui.btn_select_ref.clicked.connect(self.on_btn_select_ref_clicked)
+        self.ui.btn_select_cht.clicked.connect(self.select_cht_file)
+        self.ui.btn_select_ref.clicked.connect(self.select_color_ref_file)
 
         # event for a tab chenged for tab_create_mode
         self.ui.tab_create_mode.currentChanged.connect(self.on_tab_create_mode_changed)
@@ -297,7 +299,7 @@ class NewProjectDialog(QDialog):
         else:
             super().keyPressEvent(event)
 
-    def on_select_path_clicked(self):
+    def select_project_path(self):
         # Show save dialog with predefined patch from edt_project_path lineedit
         current_path = self.ui.edt_project_path.text()
 
@@ -325,6 +327,10 @@ class NewProjectDialog(QDialog):
 
     def on_tab_create_mode_changed(self ):
         # enable/disable buttons
+        self.update_controls()
+        return
+
+    def update_controls(self):
         enable_create_button = True
         if self.ui.tab_create_mode.currentIndex() == 0:
             enable_create_button = True
@@ -333,9 +339,9 @@ class NewProjectDialog(QDialog):
             enable_create_button = bool( self.ref_list and self.cht_list)
 
         self.ui.create_button.setEnabled(enable_create_button)
-        return
 
-    def on_select_cht_clicked(self):
+
+    def select_cht_file(self):
         file_path, _ = QFileDialog.getOpenFileName(
             self,
             self.tr("Select any cht file"),
@@ -388,23 +394,17 @@ class NewProjectDialog(QDialog):
         # join ordered file names into a \n delimited string
         file_string = "\n".join(str(f) for f in self.cht_list)
         self.ui.lbl_cht_file.setText(file_string)
+        self.update_controls()
         return
 
-    def on_btn_select_ref_clicked(self):
-        file_path, _ = QFileDialog.getOpenFileName(
-            self,
-            self.tr("Select color reference file"),
-            "",
-            "TI2 Files (*.ti2), CIE Files (*.cie), TXT Files (*.txt)"
-        )
+    def select_color_ref_file(self):
+        file_path = open_file_dialog("ti2","")
 
-        if not file_path:
-            return
-
-        self.ref_list = [file_path]
-        file_string = "\n".join(str(f) for f in self.ref_list)
-        self.ui.lbl_ref_file.setText(file_string)
-
+        if file_path:
+            self.ref_list = [file_path]
+            file_string = "\n".join(str(f) for f in self.ref_list)
+            self.ui.lbl_ref_file.setText(file_string)
+        self.update_controls()
         return
 
     def on_create_clicked(self):
@@ -466,8 +466,15 @@ class NewProjectDialog(QDialog):
         """Create project by running targen and printtarg."""
 
         try:
+            remake = None
             if self.ui.tab_create_mode.currentIndex() == 0:
                 self.make_new_targets()
+                remake = {
+                    "template_name": self.template_name,
+                    "optimization_seed": self.best_result["seed"],
+                    "targen_command": self.targen_command,
+                    "printtarg_command": self.printtarg_command
+                }
             if self.ui.tab_create_mode.currentIndex() == 1:
                 self.import_targets()
 
@@ -493,7 +500,7 @@ class NewProjectDialog(QDialog):
             if self.ui.chk_LUT.isChecked():
                 outputs.append("LUT")
             if self.ui.chk_Cine.isChecked():
-                outputs.append("CineOn")
+                outputs.append("Cineon")
             if  not markers:
                 outputs.append("ICC")
 
@@ -507,12 +514,7 @@ class NewProjectDialog(QDialog):
                     "cht_names": self.cht_list,
                     "markers": markers,
                 },
-                "remake": {
-                    "template_name": self.template_name,
-                    "optimization_seed": self.best_result["seed"],
-                    "targen_command": self.targen_command,
-                    "printtarg_command": self.printtarg_command
-                },
+                "remake": remake,
                 "image_options":
                     {
                         "is_negative": self.ui.negative_checkbox.isChecked(),

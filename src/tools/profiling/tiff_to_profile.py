@@ -6,12 +6,12 @@ import traceback
 from typing import Dict, Any, Optional, List
 from background_process import BackgroundProcessManager
 
-from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel,
+from PySide6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel,
                              QLineEdit, QPushButton, QMessageBox, QFileDialog,
                              QApplication, QProgressDialog, QProgressBar)
-from PyQt5.QtGui import QMovie
+from PySide6.QtGui import QMovie
 
-from PyQt5.QtCore import Qt, QCoreApplication
+from PySide6.QtCore import Qt, QCoreApplication
 from const import GENERIC_OK, GENERIC_CANCEL
 
 DIALOG_WIDTH = 640
@@ -323,7 +323,7 @@ if __name__ == "__main__":
     # Initialise QApplication for dialogue testing
     import sys
     import traceback
-    from PyQt5.QtWidgets import QApplication
+    from PySide6.QtWidgets import QApplication
 
     app = QApplication(sys.argv)
 

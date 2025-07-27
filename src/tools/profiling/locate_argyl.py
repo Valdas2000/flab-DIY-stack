@@ -2,7 +2,7 @@ import os
 import sys
 from pathlib import Path
 import glob
-from PyQt5.QtWidgets import QApplication, QFileDialog, QMessageBox
+from PySide6.QtWidgets import QApplication, QFileDialog, QMessageBox
 
 
 def tr(text):

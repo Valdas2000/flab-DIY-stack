@@ -12,14 +12,10 @@ if 'pydevd' in sys.modules:
     os.environ['PYDEVD_USE_CYTHON'] = '0'
     os.environ['PYDEVD_DISABLE_FILE_VALIDATION'] = '1'
 
-from PyQt5.QtWidgets import QApplication
-from PyQt5 import QtWidgets, QtGui, QtCore
-from PyQt5.QtCore import Qt
+from PySide6.QtWidgets import QApplication
+from PySide6 import QtWidgets, QtGui, QtCore
+from PySide6.QtCore import Qt
 
-
-# Enable High-DPI scaling
-QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
-QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
 
 # Local imports
 from InteractiveGraphicsView import InteractiveGraphicsView
@@ -118,7 +114,7 @@ class MainApp(QtWidgets.QMainWindow):
         self.ui.actionCreate_targets.triggered.connect(self.action_create_targets)
         self.ui.actionMake_TI3.triggered.connect(self.action_make_ti3)
         self.ui.actionCreate_ICC_profile.triggered.connect(self.action_create_icc_profile)
-        self.ui.actionCreate_DCM_profile.triggered.connect(self.action_create_dcm_profile)
+        self.ui.actionCreate_DCP_profile.triggered.connect(self.action_create_dcp_profile)
         self.ui.actionCreate_cube_LUT.triggered.connect(self.action_create_cube_lut)
 
         # Help Menu
@@ -133,6 +129,9 @@ class MainApp(QtWidgets.QMainWindow):
         # TIFF Group buttons
         self.ui.btn_ReadPatches.clicked.connect(self.btn_read_patches_clicked)
         self.ui.btn_ResetGrid.clicked.connect(self.btn_reset_grid_clicked)
+
+        # Image Group
+        self.ui.btn_ReadPatches.clicked.connect(self.action_read_patches)
 
         # === SLIDERS ===
         self.ui.slide_Lightness.valueChanged.connect(self.slide_lightness_changed)
@@ -178,14 +177,6 @@ class MainApp(QtWidgets.QMainWindow):
             self.ui.chtTabs.setCurrentIndex(position)
 
     def generate_empty_image(self) :
-        """
-        Generate empty uniform RGB image of specified color.
-
-        :param width: Image width in pixels.
-        :param height: Image height in pixels.
-        :param color: Brightness (0–255) of fill, default is white (255).
-        :return: NumPy array of shape (height, width, 3), dtype=uint8.
-        """
         self.ui.tiff_grp.setTitle(self.tr("Please load a target"))
         self.ui.tiff_grid.clear_background()
         self.is_nothing_to_drow = True
@@ -208,6 +199,9 @@ class MainApp(QtWidgets.QMainWindow):
                 self.ui.tiff_grid.set_background_image(np.array(image), self.tm.get_current_cht_data(), self.ui.chk_showPreview.isChecked(), self.ui.slide_Lightness.value())
                 self.ui.tiff_grp.setTitle(title)
                 self.is_nothing_to_drow = False
+
+                show_risks = self.ui.chk_ShowRisks.isChecked()
+                self.chk_show_risks_toggled(show_risks)
 
             except Exception as e:
                 self.log(f"Error loading image: {e}")
@@ -243,6 +237,7 @@ class MainApp(QtWidgets.QMainWindow):
             self.ui.actionSelect_Target.setEnabled(False)
             self.ui.actionRead_Patches.setEnabled(False)
             self.ui.actionReset_Grid.setEnabled(False)
+            self.ui.chk_ShowRisks.setEnabled(False)
             # self.ui.menuCHT.setEnabled(False)
             self.ui.cht_grp.setTitle("CHT")
             return
@@ -269,6 +264,9 @@ class MainApp(QtWidgets.QMainWindow):
         self.ui.img_grp.setEnabled(having_tiff)
         self.ui.display_grp.setEnabled(having_tiff)         # enable image selection group
         self.ui.btn_ReadPatches.setEnabled(having_tiff)     # enable read patches
+
+        is_parsed = self.tm.is_fiff_parsed()
+        self.ui.chk_ShowRisks.setEnabled(is_parsed)
 
     # === MENU ACTION HANDLERS ===
     def action_new_pcl(self):
@@ -312,7 +310,6 @@ class MainApp(QtWidgets.QMainWindow):
             self.update_by_index(index)
             self.log(self.tr("Project opened"))
         return
-
 
     def action_save_pcl(self):
         pcl_name = self.tm.get_project_name()
@@ -375,7 +372,14 @@ class MainApp(QtWidgets.QMainWindow):
     def action_read_patches(self):
         """Read patches from target"""
         print("Action: Read Patches")
-        # TODO: Implement read patches functionality
+        self.tm.read_analyse_current_cht()
+        data = self.tm.get_patches_current_cht("DCP")
+        from patch_calcs import expected_artifact_quality
+        res, info = expected_artifact_quality(data, False, "DCP")
+        if res == GENERIC_OK:
+            self.log(info["m_analysis"])
+            self.log(info["q_results"])
+
 
     def action_reset_grid(self):
         """Reset grid to initial state"""
@@ -397,9 +401,15 @@ class MainApp(QtWidgets.QMainWindow):
         print("Action: Create ICC Profile")
         # TODO: Implement create ICC profile functionality
 
-    def action_create_dcm_profile(self):
+    def action_create_dcp_profile(self):
         """Create DCM profile"""
-        print("Action: Create DCM Profile")
+        from color_ref_readers import write_txt2ti3_patches
+        patches = self.tm.get_patch_map_current_cht("DCP")
+        field_to_output = "mean_rgb" # "median_rgb"
+        input_cgats_filename = "./ColorChecker.cie"
+        output_filename = "./txt.txt"
+        write_txt2ti3_patches(patches, field_to_output, input_cgats_filename, output_filename)
+        print("txt2ti3 rgb_patches.txt cie_original.txt output_base ")
         # TODO: Implement create DCM profile functionality
 
     def action_create_cube_lut(self):
@@ -507,8 +517,11 @@ class MainApp(QtWidgets.QMainWindow):
 
     def chk_show_risks_toggled(self, checked):
         """Show Risks checkbox toggled"""
-        print(f"Checkbox: Show Risks {'checked' if checked else 'unchecked'}")
-        # TODO: Implement show/hide risks functionality
+        if checked:
+            id = self.ui.lst_Images.currentRow()
+            self.ui.tiff_grid.set_show_patches_quality(self.tm.get_tif_patches_quality_byId(id)[1])
+        else:
+            self.ui.tiff_grid.set_show_patches_quality([])
 
     # === TAB HANDLERS ===
     def cht_tabs_changed(self, index):
@@ -643,6 +656,8 @@ def main():
                 else:
                     if file_path.suffix.lower() == '.pcl':
                         window = MainApp(str(file_path))
+            else:
+                window = MainApp()
         else:
             window = MainApp()
         window.show()

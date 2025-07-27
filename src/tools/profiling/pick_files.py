@@ -2,7 +2,7 @@ import pickle
 import matplotlib
 import sys
 # Добавляем импорт для диалога файлов
-from PyQt5.QtWidgets import QApplication, QFileDialog
+from PySide6.QtWidgets import QApplication, QFileDialog
 
 
 def get_raw_filters_string() -> str:
@@ -53,6 +53,10 @@ open_filters = {
         'open_caption': "Pick patch grid file...",
         'filter': "Argyll patch grids (*.cht)"
     },
+    'ti2': {
+        'open_caption': "Pick color reference file",
+        'filter':"CIE Files (*.cie);;TI2 Files (*.ti2);;TXT Files (*.txt)"
+    },
     'raw': {
         'open_caption': "Select a raw image...",
         'filter': get_raw_filters_string()
@@ -61,7 +65,7 @@ open_filters = {
 }
 
 def open_file_dialog(file_type: str = 'pcl', directory = ""):
-    """Открывает диалог выбора файла через PyQt5."""
+    """Открывает диалог выбора файла через PySide6."""
     try:
         # Проверяем, есть ли уже приложение Qt
         app = QApplication.instance()

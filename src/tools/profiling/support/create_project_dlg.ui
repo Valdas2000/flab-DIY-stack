@@ -3,7 +3,7 @@
  <class>CreateProject_dlg</class>
  <widget class="QDialog" name="CreateProject_dlg">
   <property name="windowModality">
-   <enum>Qt::ApplicationModal</enum>
+   <enum>Qt::WindowModality::ApplicationModal</enum>
   </property>
   <property name="geometry">
    <rect>
@@ -456,11 +456,11 @@ sdf</string>
    <item>
     <widget class="Line" name="line">
      <property name="orientation">
-      <enum>Qt::Horizontal</enum>
+      <enum>Qt::Orientation::Horizontal</enum>
      </property>
     </widget>
    </item>
-   <item alignment="Qt::AlignBottom">
+   <item alignment="Qt::AlignmentFlag::AlignBottom">
     <widget class="QWidget" name="verticalWidget" native="true">
      <property name="minimumSize">
       <size>
@@ -490,7 +490,7 @@ sdf</string>
       <property name="bottomMargin">
        <number>0</number>
       </property>
-      <item alignment="Qt::AlignHCenter|Qt::AlignVCenter">
+      <item alignment="Qt::AlignmentFlag::AlignHCenter|Qt::AlignmentFlag::AlignVCenter">
        <widget class="QPushButton" name="create_button">
         <property name="minimumSize">
          <size>
@@ -503,7 +503,7 @@ sdf</string>
         </property>
        </widget>
       </item>
-      <item alignment="Qt::AlignHCenter|Qt::AlignVCenter">
+      <item alignment="Qt::AlignmentFlag::AlignHCenter|Qt::AlignmentFlag::AlignVCenter">
        <widget class="QPushButton" name="cancel_button">
         <property name="minimumSize">
          <size>

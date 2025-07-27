@@ -18,13 +18,14 @@
 # Цветной (RGB)	Различимость цветов и серого	direction ΔE ≥ 20, worst ΔE < 3
 
 import copy
-from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene
-from PyQt5.QtCore import Qt, pyqtSignal, QPointF
-from PyQt5.QtGui import QResizeEvent, QMouseEvent, QPainter, QBrush, QPen, QCursor, QFont
-from PyQt5.QtGui import QImage, QColor
+from PySide6.QtWidgets import QGraphicsView, QGraphicsScene
+from PySide6.QtCore import Qt, QPointF
+from PySide6.QtCore import Signal as pyqtSignal
+from PySide6.QtGui import QResizeEvent, QMouseEvent, QPainter, QBrush, QPen, QCursor, QFont
+from PySide6.QtGui import QImage, QColor
 import numpy as np
 import math
-from src.tools.profiling.const import GENERIC_OK
+from const import GENERIC_OK, QUALITY_COLOURS_16BIT
 
 
 class InteractiveGraphicsView(QGraphicsView):
@@ -71,6 +72,7 @@ class InteractiveGraphicsView(QGraphicsView):
         self.half_patch = []
         self.corner = []
         self.rgb = []
+        self.patches_quality  = []
         self.range_names = None
         self.range_idx = None
         self.patch_scale =  100
@@ -94,8 +96,6 @@ class InteractiveGraphicsView(QGraphicsView):
         self.solid_brush.setStyle(Qt.SolidPattern)
 
         self.no_brush = QBrush()
-
-
 
         self.font_size_ref = 24
         self.font_size = self.font_size_ref
@@ -131,8 +131,8 @@ class InteractiveGraphicsView(QGraphicsView):
             self.corner = cht_data['corner']
 
         self.half_patch  = copy.copy(self.patch_wh) / 2
-        self.rgb = cht_data['RGB']
 
+        self.rgb = cht_data['RGB']
 
         from cht_data_calcs import adopt_corner_target
         adopt_corner_target(self.corner, width , height)
@@ -154,26 +154,35 @@ class InteractiveGraphicsView(QGraphicsView):
 
         self.apply_grid_transform()
         self.update_brightness(background_brightness)
-        self.viewport().update()
+        # is not need because update_brightness is alredy does it
+        # self.update_view(background_changed=True)
+
 
     def set_show_patches(self, is_draw_patches):
         if self.show_patches == is_draw_patches:
             return
         self.show_patches_ref = self.show_patches = is_draw_patches
-        self.viewport().update()
+        self.update_view()
+
+    def set_show_patches_quality(self, patches_quality: list[int] | None):
+        self.patches_quality = patches_quality
+        self.update_view()
+
 
     def set_show_colors(self, is_show_colors):
         if self.show_colors == is_show_colors:
             return
         self.show_colors_ref = self.show_colors = is_show_colors
-        self.viewport().update()
+        self.update_view()
+
 
     def set_patch_scale(self, patch_scale):
         if self.patch_scale == patch_scale:
             return
         self.patch_scale = patch_scale
         self.apply_grid_transform()
-        self.viewport().update()
+        self.update_view()
+
 
     def _update_qimage_from_array(self, img_array):
         """Creates QImage from numpy array."""
@@ -211,7 +220,7 @@ class InteractiveGraphicsView(QGraphicsView):
         self._update_qimage_from_array(img_array)
 
         # Update display
-        self.viewport().update()
+        self.update_view(background_changed=True)
 
     def clear_background(self):
         """Removes current background and updates display."""
@@ -296,15 +305,35 @@ class InteractiveGraphicsView(QGraphicsView):
 
         # Set up brush for specific point
         painter.setPen(Qt.NoPen)
+        painter.setBrush(self.solid_brush)
+        temp_color = QColor()
 
         for idx, (x, y) in enumerate(self.points):
             color = int(self.rgb[idx])
             w2, h2 = (self.half_patch[idx]).astype(int)
-            self.solid_brush.setColor(QColor.fromRgb(color))
+            temp_color.setRgb(color)
+            self.solid_brush.setColor(temp_color)
             painter.setBrush(self.solid_brush)
-
             painter.drawRect(int(x - w2), int(y - h2), w2, h2 )
 
+    def draw_risks_foreground(self, painter, rect):
+        """Draw patch boundaries in foreground."""
+        if self.uv is None or self.uv.size == 0:
+            return
+        if not self.patches_quality:
+            return
+
+        painter.setPen(Qt.NoPen)
+        painter.setBrush(self.solid_brush)
+        temp_color = QColor()
+
+        for idx, (x, y) in enumerate(self.points):
+            color = int(QUALITY_COLOURS_16BIT[self.patches_quality[idx]])
+            w2, h2 = (self.half_patch[idx]).astype(int)
+            temp_color.setRgb(color)
+            self.solid_brush.setColor(temp_color)
+            painter.setBrush(self.solid_brush)
+            painter.drawRect(int(x), int(y), w2, h2 )
 
     def find_nearest_corner(self, scene_pos) -> int | None:
             """Find nearest reference point within tolerance zone.
@@ -510,8 +539,8 @@ class InteractiveGraphicsView(QGraphicsView):
             # Wheel down - zoom out
             self.zoom_to_point(scene_pos, 1.0 / 1.25)
 
-        self.apply_grid_transform()
         visible_rect = self.mapToScene(self.viewport().rect()).boundingRect()
+        self.apply_grid_transform()
         self.scene().update(visible_rect)
 
 
@@ -571,6 +600,8 @@ class InteractiveGraphicsView(QGraphicsView):
 
         if self.show_colors:
             self.draw_colors_foreground(painter, rect)
+
+        self.draw_risks_foreground(painter, rect)
 
         self.draw_labels_foreground(painter, rect)
 
@@ -663,6 +694,13 @@ class InteractiveGraphicsView(QGraphicsView):
         self.centerOn(scene_point)
         self._is_fit_mode = False
 
-    def update_view(self):
+    def update_view(self, background_changed=False):
         # Here you can add logic for redrawing background and grid
-        self.scene().update()
+        if background_changed:
+            # full update
+            self.viewport().update()
+        else:
+            # fast update
+            visible_rect = self.mapToScene(self.viewport().rect()).boundingRect()
+            self.scene().update(visible_rect)
+
