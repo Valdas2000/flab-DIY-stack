@@ -6,9 +6,15 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>648</width>
+    <width>1134</width>
     <height>491</height>
    </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>1134</width>
+    <height>491</height>
+   </size>
   </property>
   <property name="windowTitle">
    <string>Dialog</string>
@@ -28,13 +34,13 @@
     <widget class="QGroupBox" name="grp_controls">
      <property name="minimumSize">
       <size>
-       <width>140</width>
+       <width>200</width>
        <height>0</height>
       </size>
      </property>
      <property name="maximumSize">
       <size>
-       <width>160</width>
+       <width>400</width>
        <height>16777215</height>
       </size>
      </property>
@@ -44,14 +50,23 @@
      <layout class="QVBoxLayout" name="verticalLayout">
       <item>
        <widget class="QLabel" name="label">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
         <property name="text">
          <string>Some info</string>
         </property>
         <property name="textFormat">
-         <enum>Qt::TextFormat::PlainText</enum>
+         <enum>Qt::TextFormat::MarkdownText</enum>
         </property>
         <property name="alignment">
          <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop</set>
+        </property>
+        <property name="textInteractionFlags">
+         <set>Qt::TextInteractionFlag::LinksAccessibleByMouse|Qt::TextInteractionFlag::TextSelectableByMouse</set>
         </property>
        </widget>
       </item>

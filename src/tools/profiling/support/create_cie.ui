@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>create_cie_ui</class>
- <widget class="QDialog" name="create_cie_ui">
+ <class>create_cie</class>
+ <widget class="QDialog" name="create_cie">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
     <width>414</width>
-    <height>295</height>
+    <height>358</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -82,44 +82,12 @@
      </layout>
     </widget>
    </item>
-   <item row="3" column="0">
-    <widget class="QFrame" name="frame">
-     <property name="frameShape">
-      <enum>QFrame::Shape::StyledPanel</enum>
-     </property>
-     <property name="frameShadow">
-      <enum>QFrame::Shadow::Raised</enum>
-     </property>
-     <layout class="QHBoxLayout" name="horizontalLayout">
-      <item>
-       <widget class="QPushButton" name="btn_cancel">
-        <property name="text">
-         <string>Close</string>
-        </property>
-       </widget>
-      </item>
-     </layout>
-    </widget>
-   </item>
    <item row="2" column="0" alignment="Qt::AlignmentFlag::AlignTop">
     <widget class="QGroupBox" name="grp_ti3check">
      <property name="title">
       <string>TI3 Check</string>
      </property>
      <layout class="QGridLayout" name="gridLayout_2">
-      <item row="0" column="1" rowspan="2">
-       <widget class="QLabel" name="lbl_file_list">
-        <property name="minimumSize">
-         <size>
-          <width>0</width>
-          <height>57</height>
-         </size>
-        </property>
-        <property name="text">
-         <string>TextLabel</string>
-        </property>
-       </widget>
-      </item>
       <item row="0" column="2">
        <widget class="QPushButton" name="btn_select_ti3s">
         <property name="minimumSize">
@@ -140,9 +108,77 @@
        </widget>
       </item>
       <item row="1" column="2">
+       <widget class="QPushButton" name="btn_perpath_info">
+        <property name="text">
+         <string>Patches</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="2">
+       <widget class="QPushButton" name="btn_overal_info">
+        <property name="text">
+         <string>Overview</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="2">
        <widget class="QPushButton" name="btn_create_cie">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>23</height>
+         </size>
+        </property>
         <property name="text">
          <string>Create CIE</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QCheckBox" name="chk_is_monohrome">
+        <property name="text">
+         <string>Monohrome</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="0" rowspan="2" colspan="2">
+       <widget class="QLabel" name="lbl_file_list">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>57</height>
+         </size>
+        </property>
+        <property name="text">
+         <string>TextLabel</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="3" column="0">
+    <widget class="QGroupBox" name="groupBox">
+     <property name="minimumSize">
+      <size>
+       <width>0</width>
+       <height>30</height>
+      </size>
+     </property>
+     <property name="title">
+      <string>GroupBox</string>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout">
+      <item>
+       <widget class="QPushButton" name="btn_cancel">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>23</height>
+         </size>
+        </property>
+        <property name="text">
+         <string>Close</string>
         </property>
        </widget>
       </item>

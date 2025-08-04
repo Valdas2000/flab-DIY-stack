@@ -10,13 +10,13 @@
     <x>0</x>
     <y>0</y>
     <width>600</width>
-    <height>415</height>
+    <height>425</height>
    </rect>
   </property>
   <property name="minimumSize">
    <size>
     <width>600</width>
-    <height>415</height>
+    <height>425</height>
    </size>
   </property>
   <property name="windowTitle">
@@ -39,22 +39,35 @@
        <number>6</number>
       </property>
       <property name="topMargin">
-       <number>6</number>
+       <number>2</number>
       </property>
       <property name="rightMargin">
        <number>6</number>
       </property>
       <property name="bottomMargin">
-       <number>0</number>
+       <number>9</number>
       </property>
       <property name="horizontalSpacing">
        <number>0</number>
       </property>
       <item row="0" column="0">
-       <widget class="QLineEdit" name="edt_project_path"/>
+       <widget class="QLineEdit" name="edt_project_path">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>30</height>
+         </size>
+        </property>
+       </widget>
       </item>
       <item row="0" column="1">
        <widget class="QPushButton" name="btn_select_path">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>30</height>
+         </size>
+        </property>
         <property name="text">
          <string>Location</string>
         </property>
@@ -73,14 +86,20 @@
      </property>
      <property name="minimumSize">
       <size>
-       <width>0</width>
-       <height>160</height>
+       <width>582</width>
+       <height>220</height>
       </size>
      </property>
-     <property name="currentIndex">
-      <number>1</number>
+     <property name="autoFillBackground">
+      <bool>true</bool>
      </property>
-     <widget class="QWidget" name="tab__new_project">
+     <property name="tabShape">
+      <enum>QTabWidget::TabShape::Triangular</enum>
+     </property>
+     <property name="currentIndex">
+      <number>0</number>
+     </property>
+     <widget class="QWidget" name="tab_new_project">
       <property name="autoFillBackground">
        <bool>true</bool>
       </property>
@@ -96,6 +115,12 @@
            <verstretch>0</verstretch>
           </sizepolicy>
          </property>
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>52</height>
+          </size>
+         </property>
          <property name="maximumSize">
           <size>
            <width>16777215</width>
@@ -106,14 +131,23 @@
           <string>TextLabel
  ccc</string>
          </property>
+         <property name="textFormat">
+          <enum>Qt::TextFormat::MarkdownText</enum>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop</set>
+         </property>
         </widget>
        </item>
        <item>
-        <widget class="QFrame" name="gridFrame">
+        <widget class="QFrame" name="frm_new_project">
          <property name="autoFillBackground">
           <bool>true</bool>
          </property>
          <layout class="QGridLayout" name="gridLayout_3">
+          <property name="bottomMargin">
+           <number>12</number>
+          </property>
           <property name="horizontalSpacing">
            <number>6</number>
           </property>
@@ -195,6 +229,12 @@
       </layout>
      </widget>
      <widget class="QWidget" name="tab_import_targets">
+      <property name="minimumSize">
+       <size>
+        <width>0</width>
+        <height>200</height>
+       </size>
+      </property>
       <property name="autoFillBackground">
        <bool>true</bool>
       </property>
@@ -204,15 +244,27 @@
       <layout class="QVBoxLayout" name="verticalLayout_4">
        <item>
         <widget class="QLabel" name="lbl_import_targets_info">
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>45</height>
+          </size>
+         </property>
          <property name="text">
           <string>line1
 line2
 line3</string>
          </property>
+         <property name="textFormat">
+          <enum>Qt::TextFormat::MarkdownText</enum>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop</set>
+         </property>
         </widget>
        </item>
        <item>
-        <widget class="QFrame" name="gridFrame">
+        <widget class="QFrame" name="frm_import_targets">
          <property name="autoFillBackground">
           <bool>true</bool>
          </property>
@@ -241,12 +293,21 @@ line3</string>
           </item>
           <item row="0" column="1">
            <widget class="QLabel" name="lbl_cht_file">
+            <property name="minimumSize">
+             <size>
+              <width>427</width>
+              <height>62</height>
+             </size>
+            </property>
             <property name="text">
              <string>cht_file_name
 sddf
 sdsd
 sdd
 sdf</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop</set>
             </property>
            </widget>
           </item>
@@ -268,6 +329,9 @@ sdf</string>
             <property name="text">
              <string>ti/cie file name</string>
             </property>
+            <property name="alignment">
+             <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop</set>
+            </property>
            </widget>
           </item>
          </layout>
@@ -288,7 +352,7 @@ sdf</string>
      <property name="minimumSize">
       <size>
        <width>528</width>
-       <height>50</height>
+       <height>93</height>
       </size>
      </property>
      <property name="maximumSize">
@@ -298,7 +362,19 @@ sdf</string>
       </size>
      </property>
      <layout class="QGridLayout" name="gridLayout">
+      <property name="leftMargin">
+       <number>0</number>
+      </property>
+      <property name="topMargin">
+       <number>0</number>
+      </property>
+      <property name="rightMargin">
+       <number>0</number>
+      </property>
       <property name="bottomMargin">
+       <number>0</number>
+      </property>
+      <property name="verticalSpacing">
        <number>0</number>
       </property>
       <item row="0" column="1">
@@ -312,7 +388,7 @@ sdf</string>
         <property name="minimumSize">
          <size>
           <width>260</width>
-          <height>50</height>
+          <height>60</height>
          </size>
         </property>
         <property name="title">
@@ -323,7 +399,7 @@ sdf</string>
           <number>0</number>
          </property>
          <property name="bottomMargin">
-          <number>0</number>
+          <number>9</number>
          </property>
          <item row="0" column="0">
           <widget class="QCheckBox" name="chk_3000K">
@@ -380,20 +456,13 @@ sdf</string>
           <number>0</number>
          </property>
          <item row="0" column="0">
-          <widget class="QCheckBox" name="negative_checkbox">
+          <widget class="QCheckBox" name="chk_is_negative">
            <property name="text">
-            <string>Negative</string>
+            <string>Negative Film</string>
            </property>
           </widget>
          </item>
-         <item row="1" column="0">
-          <widget class="QCheckBox" name="film_checkbox">
-           <property name="text">
-            <string>Film</string>
-           </property>
-          </widget>
-         </item>
-         <item row="2" column="0" colspan="2">
+         <item row="1" column="0" colspan="2">
           <widget class="QWidget" name="formWidget" native="true">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
@@ -465,7 +534,7 @@ sdf</string>
      <property name="minimumSize">
       <size>
        <width>0</width>
-       <height>50</height>
+       <height>30</height>
       </size>
      </property>
      <property name="maximumSize">

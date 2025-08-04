@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>963</width>
-    <height>840</height>
+    <width>1007</width>
+    <height>867</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -15,6 +15,12 @@
     <horstretch>0</horstretch>
     <verstretch>0</verstretch>
    </sizepolicy>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>537</width>
+    <height>867</height>
+   </size>
   </property>
   <property name="windowTitle">
    <string>MainWindow</string>
@@ -478,13 +484,13 @@
                  <number>10</number>
                 </property>
                 <property name="topMargin">
-                 <number>9</number>
+                 <number>5</number>
                 </property>
                 <property name="rightMargin">
-                 <number>0</number>
+                 <number>6</number>
                 </property>
                 <property name="bottomMargin">
-                 <number>0</number>
+                 <number>10</number>
                 </property>
                 <item alignment="Qt::AlignmentFlag::AlignTop">
                  <widget class="QGroupBox" name="display_grp">
@@ -717,7 +723,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>963</width>
+     <width>1007</width>
      <height>33</height>
     </rect>
    </property>
@@ -764,6 +770,7 @@
     <addaction name="actionCreate_ICC_profile"/>
     <addaction name="actionCreate_DCP_profile"/>
     <addaction name="actionCreate_cube_LUT"/>
+    <addaction name="actionCalibrate_Target"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -928,6 +935,11 @@
    </property>
    <property name="toolTip">
     <string>About the program</string>
+   </property>
+  </action>
+  <action name="actionCalibrate_Target">
+   <property name="text">
+    <string>Calibrate Target...</string>
    </property>
   </action>
  </widget>
