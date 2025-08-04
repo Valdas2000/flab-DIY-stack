@@ -161,32 +161,45 @@ def _calculate_uv_coordinates(point, corner_points):
 
     return np.array([u, v], dtype=np.float32)
 
-def _xyz_to_rgb(xyz):
-    # Извлечение значений и нормализация
-    X = xyz['X'] / 100.0
-    Y = xyz['Y'] / 100.0
-    Z = xyz['Z'] / 100.0
 
-    # XYZ → линейный RGB
-    r =  3.2406 * X - 1.5372 * Y - 0.4986 * Z
-    g = -0.9689 * X + 1.8758 * Y + 0.0415 * Z
-    b =  0.0557 * X - 0.2040 * Y + 1.0570 * Z
+import numpy as np
 
-    # Гамма-коррекция sRGB
-    def gamma_correct(c):
-        return 12.92 * c if c <= 0.0031308 else 1.055 * (c ** (1/2.4)) - 0.055
+_matrix_srgb = np.array([
+    [3.2406, -1.5372, -0.4986],
+    [-0.9689, 1.8758, 0.0415],
+    [0.0557, -0.2040, 1.0570]
+], dtype=np.float64)
 
-    r = gamma_correct(r)
-    g = gamma_correct(g)
-    b = gamma_correct(b)
+_matrix_adobe = np.array([
+    [2.0413, -0.5649, -0.3447],
+    [-0.9692, 1.8760, 0.0416],
+    [0.0134, -0.1184, 1.0154]
+], dtype=np.float64)
 
-    # Обрезка и преобразование в 8-битный цвет
-    r = int(round(max(0.0, min(1.0, r)) * 255))
-    g = int(round(max(0.0, min(1.0, g)) * 255))
-    b = int(round(max(0.0, min(1.0, b)) * 255))
+def _xyz_to_rgb(xyz, is_srgb=True):
+    """
+    Convert XYZ to RGB for monitor display (numpy version)
+    Args:
+        xyz: dict with keys 'X', 'Y', 'Z' or array [X, Y, Z] (normalised)
+        is_srgb: bool, True for sRGB (default), False for Adobe RGB
+    Returns:
+        int: QRgb value (0xFFRRGGBB)
+    """
+    xyz_array = np.array([xyz['X'], xyz['Y'], xyz['Z']], dtype=np.float64)
+    xyz_normalized = xyz_array / 100.0
 
-    # Упаковка в QRgb (0xFFRRGGBB)
-    return (255 << 24) | (r << 16) | (g << 8) | b
+    if is_srgb:
+        rgb = _matrix_srgb @ xyz_normalized
+        rgb = np.where(rgb <= 0.0031308, 12.92 * rgb, 1.055 * np.power(rgb, 1/2.4) - 0.055)
+    else:
+        rgb = _matrix_adobe @ xyz_normalized
+        rgb = np.where(rgb > 0, np.power(rgb, 1/2.2), 0)
+
+    # Single line: clipping → 8-bit → packing
+    rgb_8bit = np.round(np.clip(rgb, 0, 1) * 255).astype(int)
+
+    # Pack into QRgb (0xFFRRGGBB)
+    return (255 << 24) | (rgb_8bit[0] << 16) | (rgb_8bit[1] << 8) | rgb_8bit[2]
 
 def _find_corner_patches(patches):
     """
@@ -376,12 +389,12 @@ def _extract_corner_coordinates(box_def):
     coords = box_def['coordinates']
     # F _ _ x0 y0 x1 y1 x2 y2 x3 y3
     # Order: top-left, top-right, bottom-right, bottom-left
-    # [[0, 0], [1, 0], [0, 1], [1, 1]]
+    # [[0, 0], [1, 0], [1, 1], [0, 1]]
     return [
         [coords[0], coords[1]],  # x0, y0 - top-left
         [coords[2], coords[3]],  # x1, y1 - top-right
-        [coords[6], coords[7]],  # x3, y3 - bottom-left
         [coords[4], coords[5]],  # x2, y2 - bottom-right
+        [coords[6], coords[7]],  # x3, y3 - bottom-left
     ]
 
 
@@ -536,7 +549,8 @@ def _generate_label_sequence(start_label, end_label):
 def test_parse_cht_file():
     """Test function for CHT file parsing."""
 
-    test_filename = 'C:/Argyll_V3.3.0/ref/it8.cht'
+    #test_filename = 'C:/Argyll_V3.3.0/ref/it8.cht'
+    test_filename = 'D:/0GitHub/flab-DIY-stack/src/tools/profiling/demo_project/ColorSmall/ColorReverce_Small.cht '
     # Test parsing
     status, result = parse_cht_file(test_filename)
     from create_target_preview import create_color_target_tiff

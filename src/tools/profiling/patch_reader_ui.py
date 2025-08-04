@@ -29,7 +29,7 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
-        MainWindow.resize(963, 840)
+        MainWindow.resize(963, 855)
         sizePolicy = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -69,6 +69,8 @@ class Ui_MainWindow(object):
         self.actionCreate_cube_LUT.setObjectName(u"actionCreate_cube_LUT")
         self.actionAbout = QAction(MainWindow)
         self.actionAbout.setObjectName(u"actionAbout")
+        self.actionCalibrate_Target = QAction(MainWindow)
+        self.actionCalibrate_Target.setObjectName(u"actionCalibrate_Target")
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
         self.verticalLayout = QVBoxLayout(self.centralwidget)
@@ -285,7 +287,7 @@ class Ui_MainWindow(object):
         self.img_grp.setMinimumSize(QSize(0, 160))
         self.horizontalLayout = QHBoxLayout(self.img_grp)
         self.horizontalLayout.setObjectName(u"horizontalLayout")
-        self.horizontalLayout.setContentsMargins(10, 9, 0, 0)
+        self.horizontalLayout.setContentsMargins(10, 5, 6, 10)
         self.display_grp = QGroupBox(self.img_grp)
         self.display_grp.setObjectName(u"display_grp")
         self.display_grp.setMinimumSize(QSize(80, 140))
@@ -440,6 +442,7 @@ class Ui_MainWindow(object):
         self.menuTools.addAction(self.actionCreate_ICC_profile)
         self.menuTools.addAction(self.actionCreate_DCP_profile)
         self.menuTools.addAction(self.actionCreate_cube_LUT)
+        self.menuTools.addAction(self.actionCalibrate_Target)
         self.menuHelp.addAction(self.actionAbout)
 
         self.retranslateUi(MainWindow)
@@ -538,6 +541,7 @@ class Ui_MainWindow(object):
 #if QT_CONFIG(tooltip)
         self.actionAbout.setToolTip(QCoreApplication.translate("MainWindow", u"About the program", None))
 #endif // QT_CONFIG(tooltip)
+        self.actionCalibrate_Target.setText(QCoreApplication.translate("MainWindow", u"Calibrate Target...", None))
 #if QT_CONFIG(tooltip)
         self.cht_grp.setToolTip(QCoreApplication.translate("MainWindow", u"Expected patches on the target", None))
 #endif // QT_CONFIG(tooltip)

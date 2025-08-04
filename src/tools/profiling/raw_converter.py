@@ -3,12 +3,13 @@ import traceback
 import rawpy
 import exiv2
 from fractions import Fraction
-import imageio.v3 as iio
+import tifffile
 import numpy as np
 from pathlib import Path
 from typing import List, Union, Optional, Dict, Tuple
 import glob
 from const import GENERIC_ERROR, GENERIC_OK, NEGATIVE_FILM, POSITIVE_FILM
+from colour.models import RGB_COLOURSPACE_sRGB
 
 # Qt translation support
 def get_translator():
@@ -74,7 +75,7 @@ def _is_valid_multipliers(r_mul, g_mul, b_mul):
         return False
 
 
-def _calculate_wb_data(r_mul, g_mul, b_mul, raw_multipliers, source, confidence):
+def _calculate_wb_data(r_mul, g_mul, b_mul, raw_multipliers, source, confidence, cam2xyz):
     """Вычисление данных WB из multipliers"""
 
     # Нормализация по G каналу
@@ -97,7 +98,8 @@ def _calculate_wb_data(r_mul, g_mul, b_mul, raw_multipliers, source, confidence)
         'raw_multipliers': list(raw_multipliers[:3]),
         'ratio': ratio,
         'source': source,
-        'confidence': confidence
+        'confidence': confidence,
+        'cam2xyz': cam2xyz
     }
 
 def get_extended_metadata(raw_file_path: Path) -> Dict[str, Union[str, float, int, None]]:
@@ -175,6 +177,40 @@ def get_extended_metadata(raw_file_path: Path) -> Dict[str, Union[str, float, in
                 with rawpy.imread(str(image_path)) as raw:
                     # Попытка 1: camera_whitebalance (основной)
                     cam_mul = raw.camera_whitebalance
+                    # Get matrices with validation
+                    cam2xyz = None
+                    cam2xyz_alt = None
+                    # Primary matrix
+                    if hasattr(raw, 'color_matrix'):
+                        try:
+                            matrix = raw.color_matrix
+                            # Check for non-zero matrix
+                            if np.any(matrix != 0) and not np.isnan(matrix).any():
+                                cam2xyz = matrix
+                        except (ValueError, AttributeError):
+                            pass
+
+                    # Alternative matrix
+                    if hasattr(raw, 'rgb_xyz_matrix'):
+                        try:
+                            matrix = raw.rgb_xyz_matrix
+                            # Check for non-zero matrix
+                            if np.any(matrix != 0) and not np.isnan(matrix).any():
+                                cam2xyz_alt = matrix
+                        except (ValueError, AttributeError):
+                            pass
+
+                    # Select best available matrix
+                    if cam2xyz is not None:
+                        final_matrix = cam2xyz
+                    elif cam2xyz_alt is not None:
+                        final_matrix = cam2xyz_alt
+                        print("Warning: using alternative matrix")
+                    else:
+                        final_matrix = RGB_COLOURSPACE_sRGB
+                        print("Error: no valid camera matrix found")
+
+                    cam2xyz = final_matrix
 
                     if (cam_mul is not None and len(cam_mul) >= 3 and
                             all(x > 0 for x in cam_mul[:3])):
@@ -184,7 +220,7 @@ def get_extended_metadata(raw_file_path: Path) -> Dict[str, Union[str, float, in
                         # Проверка на разумность данных
                         if _is_valid_multipliers(r_mul, g_mul, b_mul):
                             return _calculate_wb_data(r_mul, g_mul, b_mul,
-                                                      cam_mul, 'camera_wb', 'high')
+                                                      cam_mul, 'camera_wb', 'high', cam2xyz)
 
                     # Попытка 2: daylight_whitebalance (запасной)
                     day_mul = raw.daylight_whitebalance
@@ -196,7 +232,7 @@ def get_extended_metadata(raw_file_path: Path) -> Dict[str, Union[str, float, in
 
                         if _is_valid_multipliers(r_mul, g_mul, b_mul):
                             return _calculate_wb_data(r_mul, g_mul, b_mul,
-                                                      day_mul, 'daylight_wb', 'medium')
+                                                      day_mul, 'daylight_wb', 'medium', cam2xyz)
 
                     # Попытка 3: Значения по умолчанию (D65)
                     return {}
@@ -487,7 +523,7 @@ def convert_raw_batch(
                     exp_time = format_shutter_speed_for_filename(metadata.get('exposure_time_float', 0))
                     camera_model = sanitize_filename(metadata.get('camera_model', 'unknown'))
 
-                    base_name = f"{input_file.stem}_{mode}_{wb_temp}_F{f_number}_{exp_time}_{camera_model}"
+                    base_name = f"{input_file.stem}_{mode}_{wb_temp['temperature']}_F{f_number}_{exp_time}_{camera_model}"
                     output_filename = f"{base_name}.tif"
                     output_file = current_output_dir / output_filename
 
@@ -498,7 +534,8 @@ def convert_raw_batch(
                         str(input_file),
                         str(output_file),
                         mode=mode,
-                        demosaic_algorithm=demosaic_algorithm
+                        wb = wb_temp,
+                    demosaic_algorithm=demosaic_algorithm
                     )
 
                     # Track created file immediately after successful creation
@@ -517,6 +554,7 @@ def convert_raw_batch(
                 except Exception as e:
                     print(tr("ERROR: mode failure {} [{}]: {}").format(
                         input_file.name, mode, e))
+                    traceback.print_exc()
                     # ANY error = cleanup ALL and exit
                     cleanup_failed_files(created_files, result_files)
                     return GENERIC_ERROR, {}
@@ -557,6 +595,7 @@ def convert_raw(
         input_path: str,
         output_path: str,
         mode: str = "icc",
+        wb = 0,
         demosaic_algorithm=rawpy.DemosaicAlgorithm.AHD,
         check_for_negative = False
 ) -> tuple[int, tuple[int, int]]:
@@ -569,6 +608,12 @@ def convert_raw(
         mode: Conversion mode ("icc", "lut", "cineon", "brk")
         demosaic_algorithm: Demosaic algorithm
     """
+
+    wb_multipliers = wb['multipliers']
+    # rawpy ожидает 4 значения [R, G, B, G2]
+    if len(wb_multipliers) == 3:
+        wb_multipliers = [wb_multipliers[0], wb_multipliers[1],
+                          wb_multipliers[2], wb_multipliers[1]]
 
     with rawpy.imread(input_path) as raw:
 
@@ -590,45 +635,90 @@ def convert_raw(
 
         elif mode == "ICC":
             # For ICC profile: maximum "raw" output
+            #rgb = raw.postprocess(
+            #    gamma=(1.0, 1.0),  # linear gamma
+            #    no_auto_bright=True,  # no auto-brightness
+            #    output_bps=16,
+            #    output_color=rawpy.ColorSpace.raw,
+            #    use_camera_wb=False,
+            #    use_auto_wb=False,
+            #    demosaic_algorithm=demosaic_algorithm,
+            #    bright=1.0,
+            #    four_color_rgb=False,
+            #    dcb_iterations=0,
+            #    dcb_enhance=False,
+            #    fbdd_noise_reduction=rawpy.FBDDNoiseReductionMode.Off,  # OFF
+            #    median_filter_passes=0
+            #)
             rgb = raw.postprocess(
-                gamma=(1.0, 1.0),  # linear gamma
-                no_auto_bright=True,  # no auto-brightness
+                # gamma=(2.2, 4.5),  # linear gamma
+                gamma=(1.2, 1.3),
+                no_auto_bright=True,
                 output_bps=16,
-                output_color=rawpy.ColorSpace.raw,
+                output_color=rawpy.ColorSpace.raw, #ProPhoto, # sRGB,  # ← sRGB вместо raw!
                 use_camera_wb=False,
                 use_auto_wb=False,
+                user_wb=wb_multipliers,
                 demosaic_algorithm=demosaic_algorithm,
-                bright=1.0,
+                bright=1.4,
                 four_color_rgb=False,
                 dcb_iterations=0,
                 dcb_enhance=False,
-                fbdd_noise_reduction=rawpy.FBDDNoiseReductionMode.Off,  # OFF
-                median_filter_passes=0
-            )
-
-        elif mode == "DCP":
-            rgb = raw.postprocess(
-                gamma=(1.0, 1.0),  # linear gamma
-                no_auto_bright=True,  # no auto-brightness
-                output_bps=16,
-                output_color=rawpy.ColorSpace.raw,
-                use_camera_wb=False,
-                use_auto_wb=False,
-                demosaic_algorithm=demosaic_algorithm,
-                bright=1.0,
-                four_color_rgb=False,
-                dcb_iterations=0,
-                dcb_enhance=False,
-                fbdd_noise_reduction=rawpy.FBDDNoiseReductionMode.Off,  # OFF
+                fbdd_noise_reduction=rawpy.FBDDNoiseReductionMode.Off,
                 median_filter_passes=0,
-
-                # maximal ArgyllCMS compatibility:
-                user_wb=[1.0, 1.0, 1.0, 1.0],  # No channal multiplexors
                 user_black=None,  # Black Level Auto
                 user_sat=None,  # Автоматический уровень насыщения
                 noise_thr=None,  # No noize reduction
                 chromatic_aberration=(1.0, 1.0),  # No abirations corrections
-                bad_pixels_path=None  # Без коррекции битых пикселей
+                bad_pixels_path=None,  # Без коррекции битых пикселей
+            )
+
+
+
+        elif mode == "DCP":
+            #rgb = raw.postprocess(
+            #    gamma=(1.0, 1.0),  # linear gamma
+            #    no_auto_bright=True,  # no auto-brightness
+            #    output_bps=16,
+            #    output_color=rawpy.ColorSpace.raw,
+            #    use_camera_wb=False,
+            #    use_auto_wb=False,
+            #    demosaic_algorithm=demosaic_algorithm,
+            #    bright=1.0,
+            #    four_color_rgb=False,
+            #    dcb_iterations=0,
+            #    dcb_enhance=False,
+            #    fbdd_noise_reduction=rawpy.FBDDNoiseReductionMode.Off,  # OFF
+            #    median_filter_passes=0,
+
+                # maximal ArgyllCMS compatibility:
+            #    user_wb=[1.0, 1.0, 1.0, 1.0],  # No channal multiplexors
+            #    user_black=None,  # Black Level Auto
+            #    user_sat=None,  # Автоматический уровень насыщения
+            #    noise_thr=None,  # No noize reduction
+            #    chromatic_aberration=(1.0, 1.0),  # No abirations corrections
+            #    bad_pixels_path=None  # Без коррекции битых пикселей
+            #)
+            rgb = raw.postprocess(
+                gamma=(2.2, 2.2),  # Гамма 2.2 вместо линейной!
+                no_auto_bright=True,
+                output_bps=16,
+                output_color=rawpy.ColorSpace.raw,  # sRGB вместо raw!
+                use_camera_wb=True,  #
+                use_auto_wb=False,
+                demosaic_algorithm=demosaic_algorithm,
+                bright=1.0,
+                four_color_rgb=False,
+                dcb_iterations=0,
+                dcb_enhance=False,
+                fbdd_noise_reduction=rawpy.FBDDNoiseReductionMode.Off,
+                user_wb=wb_multipliers,
+                median_filter_passes=0,
+                user_black=None,
+                user_sat=None,
+                noise_thr=None,
+                chromatic_aberration=(1.0, 1.0),
+                bad_pixels_path=None
             )
 
         elif mode == "LUT":
@@ -685,7 +775,7 @@ def convert_raw(
         if check_for_negative:
             ret_code = detect_negative_fast_numpy(rgb)
 
-        iio.imwrite(output_path, rgb)
+        tifffile.imwrite(output_path, rgb, photometric='rgb')
 
         h, w = rgb.shape[:2]
         return (ret_code, (w, h))

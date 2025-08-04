@@ -58,11 +58,20 @@ class MainApp(QtWidgets.QMainWindow):
         self.patch_scale=  100   # patch scale in percents
         self.update_controls()
 
+        self._pending_file = None
         if pcl_file:
-            self.load_project(pcl_file)
-
+            self._pending_file = pcl_file
 
 # service functions
+    def showEvent(self, event):
+        """Загрузить файл когда окно показано."""
+        super().showEvent(event)
+
+        # Загрузить файл только при первом показе
+        if self._pending_file:
+            self.load_project(self._pending_file)
+            self._pending_file = None  # Больше не загружать
+
     def setup_global_print_redirect(self):
         """Redirects all print() to log for application lifetime"""
         self.original_print = print
@@ -116,6 +125,7 @@ class MainApp(QtWidgets.QMainWindow):
         self.ui.actionCreate_ICC_profile.triggered.connect(self.action_create_icc_profile)
         self.ui.actionCreate_DCP_profile.triggered.connect(self.action_create_dcp_profile)
         self.ui.actionCreate_cube_LUT.triggered.connect(self.action_create_cube_lut)
+        self.ui.actionCalibrate_Target.triggered.connect(self.action_calibrate_target)
 
         # Help Menu
         self.ui.actionAbout.triggered.connect(self.action_about)
@@ -125,6 +135,8 @@ class MainApp(QtWidgets.QMainWindow):
         self.ui.btn_prevCHT.clicked.connect(self.btn_prev_cht_clicked)
         self.ui.btn_nextCHT.clicked.connect(self.btn_next_cht_clicked)
         self.ui.btn_selectTiff.clicked.connect(self.btn_select_tiff_clicked)
+        self.ui.btn_rotCCW.clicked.connect(self.btn_rotCCW_clicked)
+        self.ui.btn_rotCW.clicked.connect(self.btn_rotCW_clicked)
 
         # TIFF Group buttons
         self.ui.btn_ReadPatches.clicked.connect(self.btn_read_patches_clicked)
@@ -197,6 +209,7 @@ class MainApp(QtWidgets.QMainWindow):
                     title = str(Path(path).name)
                 # Convert to NumPy array
                 self.ui.tiff_grid.set_background_image(np.array(image), self.tm.get_current_cht_data(), self.ui.chk_showPreview.isChecked(), self.ui.slide_Lightness.value())
+                self.ui.tiff_grid.set_patch_scale(self.patch_scale)
                 self.ui.tiff_grp.setTitle(title)
                 self.is_nothing_to_drow = False
 
@@ -270,7 +283,7 @@ class MainApp(QtWidgets.QMainWindow):
 
     # === MENU ACTION HANDLERS ===
     def action_new_pcl(self):
-        from create_new_project import create_new_project
+        from create_project_dlg import create_new_project
 
         ret, data = create_new_project()
         if not ret == GENERIC_OK:
@@ -379,6 +392,7 @@ class MainApp(QtWidgets.QMainWindow):
         if res == GENERIC_OK:
             self.log(info["m_analysis"])
             self.log(info["q_results"])
+            self.update_controls()
 
 
     def action_reset_grid(self):
@@ -398,6 +412,22 @@ class MainApp(QtWidgets.QMainWindow):
 
     def action_create_icc_profile(self):
         """Create ICC profile"""
+        from create_icc import create_icc_profile
+        cht_data = self.tm.get_current_cht_data()
+        patches = cht_data.get('image_file', None)
+        icc = None
+        flow = None
+
+        if patches:
+            index = self.ui.lst_Images.currentRow()
+            if index < 0:
+                flow = 'ICC'
+            else:
+                flow = self.ui.lst_Images.item(index).text()
+
+        print(f"DEBUG: flow is {flow}")
+        create_icc_profile(self.tm, cht_data['tag'], flow)
+
         print("Action: Create ICC Profile")
         # TODO: Implement create ICC profile functionality
 
@@ -411,6 +441,10 @@ class MainApp(QtWidgets.QMainWindow):
         write_txt2ti3_patches(patches, field_to_output, input_cgats_filename, output_filename)
         print("txt2ti3 rgb_patches.txt cie_original.txt output_base ")
         # TODO: Implement create DCM profile functionality
+
+    def action_calibrate_target(self):
+        from create_cie import create_cie
+        create_cie(self.tm, '3000K')
 
     def action_create_cube_lut(self):
         """Create .cube LUT"""
@@ -468,6 +502,21 @@ class MainApp(QtWidgets.QMainWindow):
         print("Button: Reset Grid")
         # TODO: Implement reset grid functionality
 
+    def btn_rotCCW_clicked(self):
+        cht_data = self.tm.get_current_cht_data()["cht_data"]
+        corner = cht_data['corner']
+        corner[[0, 1, 2, 3]] = corner[[3, 0, 1, 2]]
+        self.ui.tiff_grid.apply_grid_transform()
+        self.ui.tiff_grid.update_view()
+        return
+
+    def btn_rotCW_clicked(self):
+        cht_data = self.tm.get_current_cht_data()["cht_data"]
+        corner = cht_data['corner']
+        corner[[0, 1, 2, 3]] = corner[[1, 2, 3, 0]]
+        self.ui.tiff_grid.apply_grid_transform()
+        self.ui.tiff_grid.update_view()
+
     # === SLIDER HANDLERS ===
     def slide_lightness_changed(self, value):
         """Lightness slider value changed"""
@@ -480,8 +529,8 @@ class MainApp(QtWidgets.QMainWindow):
         if self.patch_scale != value:
             self.patch_scale = value
             if not self.ui.chk_showPreview.isChecked():
-                self.tm.get_current_cht_data()['patch_scale'] = value
-            self.ui.tiff_grid.set_patch_scale(value)
+                self.tm.get_current_cht_data()['patch_scale'] = self.patch_scale
+            self.ui.tiff_grid.set_patch_scale(self.patch_scale)
 
     # === CHECKBOX HANDLERS ===
     def chk_show_patches_toggled(self, checked):
@@ -505,6 +554,8 @@ class MainApp(QtWidgets.QMainWindow):
             self.image_file =self.tm.get_tif_demo_file()
         else:
             res, lbl, idx = self.tm.get_current_output()
+            self.patch_scale =  self.tm.get_current_cht_data()['patch_scale']
+            self.ui.slide_PatchScale.setValue(self.patch_scale)
             self.ui.lst_Images.setCurrentRow(idx)
             self.image_file = self.tm.get_tif_file(lbl)
 
@@ -565,8 +616,6 @@ class MainApp(QtWidgets.QMainWindow):
             self.image_file = self.tm.get_tif_demo_file()
 
         cht_data = self.tm.get_current_cht_data()
-        patch_scale = cht_data.get('patch_scale', 100)
-        self.ui.slide_PatchScale.setValue(self.patch_scale)
 
         ## those properties must be updated back via self.cht_data
         is_drow_patches =  cht_data.get('is_draw_patches', False)   # the flag suppress patch bars
@@ -575,7 +624,8 @@ class MainApp(QtWidgets.QMainWindow):
 
         # clean image if just got is_nothing_to_drow set
         self.ui.chk_ShowPatches.setChecked(is_drow_patches)
-        self.ui.slide_PatchScale.setValue(patch_scale)
+        self.patch_scale = cht_data.get('patch_scale', 100)
+        self.ui.slide_PatchScale.setValue(self.patch_scale)
 
         if not disable_update:
             self.load_tif()
@@ -608,7 +658,6 @@ class MainApp(QtWidgets.QMainWindow):
 
         self.disable_update = False
         self.disable_update = disable_update
-
 
     # === GRAPHICS VIEW HANDLERS ===
     def graphics_mouse_clicked(self, point):
@@ -668,7 +717,13 @@ def main():
         print("Press any key...")
         input()
 
-    sys.exit(app.exec_())
+    sys.exit(app.exec())
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        print(f"Error: {e}")
+        traceback.print_exc()
+        print("Press any key...")
+        input()

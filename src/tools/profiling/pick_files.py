@@ -57,6 +57,14 @@ open_filters = {
         'open_caption': "Pick color reference file",
         'filter':"CIE Files (*.cie);;TI2 Files (*.ti2);;TXT Files (*.txt)"
     },
+    'ti3': {
+        'open_caption': "Pick target read results",
+        'filter':"TI3 Files (*.ti3)"
+    },
+    'tis': {
+        'open_caption': "Pick color reference cie/ti2 or complete scan ti3 file ",
+        'filter': "CIE Files (*.cie);;TI2 Files (*.ti2);;TI3 Files (*.ti3)"
+    },
     'raw': {
         'open_caption': "Select a raw image...",
         'filter': get_raw_filters_string()
@@ -75,7 +83,7 @@ def open_file_dialog(file_type: str = 'pcl', directory = ""):
         file_path, _ = QFileDialog.getOpenFileName(
             parent = None,
             caption = open_filters[file_type]['open_caption'],
-            directory = directory,
+            dir= directory,
             filter = open_filters[file_type]['filter'],
         )
 
@@ -95,7 +103,7 @@ def open_multiple_files_dialog():
         file_paths, _ = QFileDialog.getOpenFileNames(
             None,
             caption="Выберите файлы",
-            directory="",
+            dir="",
             #filter="Изображения (*.jpg *.jpeg *.png *.bmp *.tiff);;Все файлы (*.*)"
             filter="cht files (*.cht);;Все файлы (*.cht)"
         )
@@ -117,7 +125,7 @@ def save_file_dialog(file_type: str = 'pcl', directory = ""):
         file_path, _ = QFileDialog.getSaveFileName(
             parent = None,
             caption =open_filters[file_type]['save_caption'],
-            directory = directory,
+            dir = directory,
             filter = open_filters[file_type]['filter']
         )
 

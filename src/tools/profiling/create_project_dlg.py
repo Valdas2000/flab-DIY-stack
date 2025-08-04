@@ -38,7 +38,7 @@ TEMPLATES = {
         "targen_args": "-v -d2 -G -g200  -B12 -f0",
         "printtarg_args": "-v -h -i i1 -p 148x210 -M 2 -C -L -S -a 1.09 -b -T 610",
         "criteria": {"direction_min": 12, "direction_max": 18, "worst_max": 2},
-        "negative_expected": False,
+        "negative_expected": True,
         "portrait": True
     },
     "B&W Film Reversing 1xA5-256": {
@@ -47,13 +47,21 @@ TEMPLATES = {
         "targen_args": "-v -d2 -G -g240  -B12 -f0",
         "printtarg_args": "-v -h -i i1 -p 148x210 -M 2 -C -L -S -a 1.02 -b -T 610",
         "criteria": {"direction_min": 12, "direction_max": 18, "worst_max": 2},
-        "negative_expected": False,
+        "negative_expected": True,
         "portrait": True
+    },
+    "Color Film Reverse Single Light 1хA5-220": {
+        "make_type": NEW_GENERATE_FROM_SCRATCH,
+        "type": "rgb",
+        "targen_args": "-v -d2 -G -g90 -e25 -f220",
+        "printtarg_args": "-v -h -i i1 -p 148x210 -M 2 -C -L -S -a 1.08 -b -T 610",
+        "criteria": {"direction_min": 20, "direction_max": float('inf'), "worst_max": 3},
+        "negative_expected": False
     },
     "Color Film Reverse Single Light 2хA5-440": {
         "make_type": NEW_GENERATE_FROM_SCRATCH,
         "type": "rgb",
-        "targen_args": "-v -d3 -G -g160 -e25 -f480",
+        "targen_args": "-v -d2 -G -g160 -e25 -f480",
         "printtarg_args": "-v -h -i i1 -p 148x210 -M 2 -C -L -S -a 1.08 -b -T 610",
         "criteria": {"direction_min": 20, "direction_max": float('inf'), "worst_max": 3},
         "negative_expected": False
@@ -61,7 +69,7 @@ TEMPLATES = {
     "Color Film Reverse Dual Light base 3хA5-720": {
         "make_type": NEW_GENERATE_FROM_SCRATCH,
         "type": "rgb",
-        "targen_args": "-v -d3 -G -g180 -e25 -f720",
+        "targen_args": "-v -d2 -G -g180 -e25 -f720",
         "printtarg_args": "-v -h -i i1 -p 148x210 -M 2 -C -L -S -a 1.08 -b -T 610",
         "criteria": {"direction_min": 20, "direction_max": float('inf'), "worst_max": 3},
         "negative_expected": False,
@@ -70,7 +78,7 @@ TEMPLATES = {
     "Color Film Reverse Dual Light Extra 4хA5-960": {
         "make_type": NEW_GENERATE_FROM_SCRATCH,
         "type": "rgb",
-        "targen_args": "-v -d3 -G -g200 -e30 -f960",
+        "targen_args": "-v -d2 -G -g200 -e30 -f960",
         "printtarg_args": "-v -h -i i1 -p 148x210 -M 2 -C -L -S -a 1.08 -b -T 610",
         "criteria": {"direction_min": 20, "direction_max": float('inf'), "worst_max": 3},
         "negative_expected": False,
@@ -254,8 +262,7 @@ class NewProjectDialog(QDialog):
         self.ui.printtarg_edit.setText("")
 
         # Negative expected checkbox
-        self.ui.negative_checkbox.setChecked(False)
-        self.ui.film_checkbox.setChecked(False)
+        self.ui.chk_is_negative.setChecked(False)
 
         self.ui.lbl_new_targets_info.setText(self.tr("Instruction to be here\nwith comments\netc."))
 
@@ -272,6 +279,9 @@ class NewProjectDialog(QDialog):
         # Common controls
         self.ui.btn_select_path.clicked.connect(self.select_project_path)
         self.ui.create_button.clicked.connect(self.on_create_clicked)
+        self.ui.cancel_button.clicked.connect(self.reject)
+
+        self.ui.cancel_button.clicked.connect(self.reject)
         self.ui.cancel_button.clicked.connect(self.reject)
 
 
@@ -334,9 +344,11 @@ class NewProjectDialog(QDialog):
         enable_create_button = True
         if self.ui.tab_create_mode.currentIndex() == 0:
             enable_create_button = True
+            self.template_changed()
 
         if self.ui.tab_create_mode.currentIndex() == 1:
             enable_create_button = bool( self.ref_list and self.cht_list)
+            self.ui.chk_is_negative.setEnabled(True)
 
         self.ui.create_button.setEnabled(enable_create_button)
 
@@ -517,8 +529,7 @@ class NewProjectDialog(QDialog):
                 "remake": remake,
                 "image_options":
                     {
-                        "is_negative": self.ui.negative_checkbox.isChecked(),
-                        "is_film_scan": self.ui.film_checkbox.isChecked(),
+                        "is_negative": self.ui.chk_is_negative.isChecked(),
                         #"is_portrait": self.template["is_portrait"]  # the flag to autorotate grid and target preview
                     }
             }
@@ -793,6 +804,9 @@ class NewProjectDialog(QDialog):
 
     def on_template_changed(self):
         """Handle template selection change."""
+        self.template_changed()
+
+    def template_changed(self):
         template_name = self.ui.template_combo.currentText()
 
         if template_name in TEMPLATES:
@@ -807,10 +821,10 @@ class NewProjectDialog(QDialog):
 
             # Handle negative checkbox
             if template_name == "User":
-                self.ui.negative_checkbox.setEnabled(True)
+                self.ui.chk_is_negative.setEnabled(True)
             else:
-                self.ui.negative_checkbox.setEnabled(False)
-                self.ui.negative_checkbox.setChecked(template["negative_expected"])
+                self.ui.chk_is_negative.setEnabled(False)
+                self.ui.chk_is_negative.setChecked(template["negative_expected"])
         else:
             print(f"Warning: Template '{template_name}' not found in TEMPLATES")
 

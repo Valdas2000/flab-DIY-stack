@@ -19,6 +19,7 @@ import pickle
 import copy
 import re
 import os
+import traceback
 from pathlib import Path
 
 import numpy as np
@@ -101,6 +102,7 @@ class TargetsManager:
             "remake": { },
             "image_options": { },
             "outputs": [],
+            'markers':[''],         # No markers by default
 
             "current_cht_file": "",
         }
@@ -131,9 +133,9 @@ class TargetsManager:
         self.header["conversions"] = list(set(conversions))                 # the RAW conversion types need to builf the ["outputs"]
 
         cht = new_project_dict["targets"]["cht_names"]
-        markers = new_project_dict["targets"]["markers"]
+        self.header['markers'] = new_project_dict["targets"]["markers"]
         for cht_name in cht:
-            self.add_cht_file(cht_name,markers)
+            self.add_cht_file(cht_name)
 
         self.set_cht("")
         return True
@@ -162,7 +164,7 @@ class TargetsManager:
     def get_project_name(self):
         return self.header["pcl_name"]
 
-    def add_cht_file(self, cht_file: str, markers = None) ->bool:
+    def add_cht_file(self, cht_file: str) ->bool:
         """Read cht file and tiff additions. Build cht_data from them,
         return True on success, False on error."""
         from create_target_preview import create_color_target_tiff , resize_tiff_to_96dpi
@@ -214,12 +216,13 @@ class TargetsManager:
                     name =  f"{first_letters}-{item_letters}"
                     break
 
-            if not markers:
-                self.data[name] = copy.deepcopy(data)
-            else:
-                for marker in markers:
-                    nme = f"{name} {marker}"
-                    self.data[nme] = copy.deepcopy(data)
+            if not self.header.get('markers', None):
+                self.header['markers'] = ['']
+
+            for marker in self.header['markers']:
+                nme = f"{name} {marker}"
+                self.data[nme] = copy.deepcopy(data)
+                self.data[nme]['tag']= marker
 
         return True
 
@@ -324,10 +327,12 @@ class TargetsManager:
 
             self._c_data["image_file"] = mdata
             convert_cht_to_pixels(self._c_data['cht_data'],image_width,image_height)
+            self._c_data['patch_scale'] = 100   # reset patch scale to initial value
             return True
 
         except Exception as e:
             print(tr("Error reading tiff: {0}").format(image_file))
+            traceback.print_exc()
             return False
 
     # data on position
@@ -431,25 +436,29 @@ class TargetsManager:
     def read_analyse_current_cht(self):
         if not self.is_has_tiff():
             return GENERIC_ERROR, ""
-        points = self._c_data["cht_data"]["points"]
-        wh = self._c_data["cht_data"]["patch_wh"]
-        metadata = self.get_tiff_file_metadata()[1]
-        files = metadata["output_files"]
-        rez, read_data = analyze_patches(points, wh, files)
-        if rez == GENERIC_OK:
-            metadata["patches"] = read_data
-            # analyze patches quality
-            patches_quality={}
-            for key, data in read_data.items():
-                rez, qa = evaluate_patches_quality(data, key)
-                patches_quality[key]=qa
-            metadata["patches_quality"] = patches_quality
+        try:
+            points = self._c_data["cht_data"]["points"]
+            wh = self._c_data["cht_data"]["patch_wh"]
+            metadata = self.get_tiff_file_metadata()[1]
+            files = metadata["output_files"]
+            rez, read_data = analyze_patches(points, wh, files, self.get_tiff_file_metadata()[1])
+            if rez == GENERIC_OK:
+                metadata["patches"] = read_data
+                # analyze patches quality
+                patches_quality={}
+                for key, data in read_data.items():
+                    rez, qa = evaluate_patches_quality(data, key)
+                    patches_quality[key]=qa
+                metadata["patches_quality"] = patches_quality
 
-            self._c_data["is_parsed"] = True
-        else:
+                self._c_data["is_parsed"] = True
+                return rez
+        except Exception as e:
+            print(tr("Error reading tiff: {0}").format(e))
+            traceback.print_exc()
             self._c_data["is_parsed"] = False
 
-        return rez
+        return GENERIC_ERROR
 
     def get_patches_current_cht(self, flow):
         metadata = self.get_tiff_file_metadata()[1]
@@ -460,6 +469,7 @@ class TargetsManager:
         patches = self.get_patches_current_cht(flow)
         patch_dict = self.get_current_cht_data()["cht_data"]["patch_dict"]
         rez = {}
+        rez_lst = [None] * len(patch_dict)
         try:
             for key, p_info in patch_dict.items():
                 idx = p_info["array_idx"]
@@ -468,7 +478,39 @@ class TargetsManager:
                     'mean_rgb': patches[idx]['mean_rgb'],
                     'median_rgb': patches[idx]['median_rgb'],
                 }
+                rez_lst[idx] = patches[idx]['mean_rgb'] * 255
+
         except KeyError:
             print(tr("Unknown flow type: {0}").format(flow))
         return rez
 
+    def get_cht_array(self, tag_name, flow = None):
+        # join cht data in a dict
+        rez = {}
+        from ti3_calcs import xyz_to_lab
+
+        for key, data in self.data.items():
+            if data["tag"] != tag_name:
+                continue
+
+            patches = data["cht_data"]["patch_dict"]
+            metadata = data.get("image_file", None)
+            flow_id = self.conv.get(flow, None)
+            is_read = bool(metadata and flow and flow_id)
+
+            if is_read and flow_id not in metadata['patches'].keys():
+                print(tr("No flow type: {0}").format(flow))
+                continue
+
+            for p_id, patch in patches.items():
+                xyz = np.array([patch["xyz"]['X'],patch["xyz"]['Y'],patch["xyz"]['Z']])
+                row_idx = patch['array_idx']
+                rez[p_id] = {
+                     "xyz": xyz,
+                     "lab": xyz_to_lab(xyz, 'D65')
+                }
+                if is_read:
+                    data = metadata['patches'][flow_id][row_idx]
+                    rez[p_id].update(data)
+
+        return GENERIC_OK, rez

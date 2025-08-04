@@ -18,7 +18,7 @@
 # Цветной (RGB)	Различимость цветов и серого	direction ΔE ≥ 20, worst ΔE < 3
 
 import copy
-from PySide6.QtWidgets import QGraphicsView, QGraphicsScene
+from PySide6.QtWidgets import QGraphicsView, QGraphicsScene, QApplication
 from PySide6.QtCore import Qt, QPointF
 from PySide6.QtCore import Signal as pyqtSignal
 from PySide6.QtGui import QResizeEvent, QMouseEvent, QPainter, QBrush, QPen, QCursor, QFont
@@ -151,6 +151,7 @@ class InteractiveGraphicsView(QGraphicsView):
         # self.fitInView(self._scene.sceneRect(), Qt.AspectRatioMode.KeepAspectRatio)
 
         self.zoom_to_fit()
+        self.update_view()
 
         self.apply_grid_transform()
         self.update_brightness(background_brightness)
@@ -328,12 +329,30 @@ class InteractiveGraphicsView(QGraphicsView):
         temp_color = QColor()
 
         for idx, (x, y) in enumerate(self.points):
-            color = int(QUALITY_COLOURS_16BIT[self.patches_quality[idx]])
+            color = int(QUALITY_COLOURS_16BIT[self.patches_quality[idx][0]])
             w2, h2 = (self.half_patch[idx]).astype(int)
             temp_color.setRgb(color)
             self.solid_brush.setColor(temp_color)
             painter.setBrush(self.solid_brush)
             painter.drawRect(int(x), int(y), w2, h2 )
+
+            color = self.patches_quality[idx][1]
+            w2, h2 = (self.half_patch[idx]).astype(int)
+            temp_color.setRgb(color)
+            self.solid_brush.setColor(temp_color)
+            painter.setBrush(self.solid_brush)
+            painter.drawRect(int(x)-w2, int(y), w2, h2 )
+
+
+            color = self.patches_quality[idx][2]
+            w2, h2 = (self.half_patch[idx]).astype(int)
+            temp_color.setRgb(color)
+            self.solid_brush.setColor(temp_color)
+            painter.setBrush(self.solid_brush)
+            painter.drawRect(int(x), int(y)-h2, w2, h2 )
+
+
+
 
     def find_nearest_corner(self, scene_pos) -> int | None:
             """Find nearest reference point within tolerance zone.
@@ -529,7 +548,7 @@ class InteractiveGraphicsView(QGraphicsView):
             return
 
         # Get mouse point in scene coordinates
-        scene_pos = self.mapToScene(event.pos())
+        scene_pos = self.mapToScene(event.position().toPoint())
 
         # Determine scroll direction
         if event.angleDelta().y() > 0:
@@ -556,7 +575,9 @@ class InteractiveGraphicsView(QGraphicsView):
             self.patch_wh[:] = wh
             self.half_patch[:] =  wh / 2
 
-        image_scale = max(1., -math.log2(self.get_current_scale()))
+        # Minimum scale
+        c_scale = self.get_current_scale()
+        image_scale = max(1., -math.log2(c_scale))
 
         self.gridpoint_radius = int(self.gridpoint_radius_ref * image_scale)
         self.gridpoint_diameter = self.gridpoint_radius * 2
@@ -570,7 +591,6 @@ class InteractiveGraphicsView(QGraphicsView):
 
         self.font_size = int(self.font_size_ref * image_scale)
         self.corner_area = int(self.corner_area_ref * image_scale) # Area around reference point for capture
-
 
 
     def drawBackground(self, painter, rect):

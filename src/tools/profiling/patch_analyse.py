@@ -1,8 +1,19 @@
+import traceback
+
 import numpy as np
-from PIL import Image
+import cv2
+#from PIL import Image
+import tifffile
+from numpy.ma.core import max_val
 from scipy.ndimage import gaussian_filter
 from const import GENERIC_OK, GENERIC_ERROR
 import rawpy
+import numpy as np
+import colour
+from colour import CCS_ILLUMINANTS, adaptation
+from colour.models import RGB_COLOURSPACE_sRGB
+from colour.models import RGB_to_XYZ, XYZ_to_Lab, Lab_to_XYZ, XYZ_to_RGB, RGB_Colourspace, RGB_COLOURSPACES
+from colour.adaptation import chromatic_adaptation_VonKries
 
 def tr(text):
     """Translation wrapper for Qt5 internationalisation support."""
@@ -46,28 +57,45 @@ def bayer_masks_for_patch(top_left_x, top_left_y, h, w, pattern):
 
     return r_mask, g_mask, b_mask
 
-def analyze_patches(points: np.ndarray, wh: np.ndarray, outputs: dict):
+def analyze_patches(points: np.ndarray, wh: np.ndarray, outputs: dict, metadata: dict):
     """Анализ всех патчей на изображении"""
 
     try:
+        max_val = 0
+        is_RGB = False
+        is_do_lab = True
         rez = {}
         pattern = None
-        for subject, file in outputs.items():
+        colour_spaсe = make_camera_colourspace( metadata['WB']['cam2xyz'])
+        for subject, f in outputs.items():
             rez[subject] = []
+            file = f
+            #file = '_R5B4809_DCP_9322_F7.1_80_Canon_EOS_R5.tif'
+            # print(tr("Subject: {0} file: {1}").format(subject, file))
             print(tr("Subject: {0} file: {1}").format(subject, file))
             # check file extension (type)
             if file.endswith(".tif") or file.endswith(".tiff"):
-                image = np.array(Image.open(file))
-                is_RGB = True
+                image = tifffile.imread(file)
+
+                if image.dtype == np.uint16 or np.max(image) > 255:
+                    bit_depth = 16.
+                else:
+                    bit_depth = 8.
+
+                is_RGB = (image.ndim == 3 and image.shape[2] == 3)
+                max_val = 65535. if bit_depth == 16 else 255.
+
             else:
                 raw = rawpy.imread(file)
                 image = raw.raw_image_visible  # ← ссылка на C-буфер
                 pattern = raw.raw_pattern
                 is_RGB = False
+                max_val = 1.
                 raw.close()
 
             # Для каждого патча в словаре
             for idx, patch_wh in enumerate(wh):
+                result = {}
                 # Получаем индексы в сетке
                 grid_x, grid_y = points[idx]
                 grid_wx, grid_wy = patch_wh
@@ -83,14 +111,27 @@ def analyze_patches(points: np.ndarray, wh: np.ndarray, outputs: dict):
                 # Вырезаем патч из изображения
                 patch = image[y1:y2, x1:x2]
 
-                # Анализируем патч
-                if patch.size > 0:  # Проверяем, что патч не пустой
+                height, width = patch.shape[:2]
+                min_pixels_per_channel = height * width
+                edge_score = detect_edge_artifacts(patch)
+
+                if is_do_lab:
+                    lab = rgb_linear_to_lab_d50(patch, colour_spaсe, max_val)
+                    lab_result = analyze_lab(lab, min_pixels_per_channel)
+                    result = lab_summary_to_rgb(lab_result, max_val)
+                    result['is_RGB'] = True
+                    result['method'] = 'process_large_patch_lab'
+                else: # never got here foe now
+                    # placeholder for other analuses
                     analysis_result = analyze_patch(patch, p_info)
-                    rez[subject].append(analysis_result)
+
+                analysis_result = result_analyze(result, edge_score, max_val, min_pixels_per_channel, reliable_threshold=0.02 , edge_threshold=0.1)
+                rez[subject].append(analysis_result)
 
         return GENERIC_OK, rez
     except Exception as e:
         print(tr("Error: {0}").format(e))
+        traceback.print_exc()
         return GENERIC_ERROR, []
 
 def get_bayer_pixel_count(h, w, channel_idx):
@@ -100,7 +141,42 @@ def get_bayer_pixel_count(h, w, channel_idx):
     else:  # Red или Blue
         return h * w // 4  # R и B по 25% каждый
 
-def analyze_patch(patch, p_info,  reliable_threshold=0.02 , edge_threshold=0.25):
+def analyze_lab(lab_patch, min_pixels_per_channel):
+    lab_result = process_large_patch_lab(lab_patch)
+    return lab_result
+
+def result_analyze(result, edge_score, min_pixels_per_channel, max_val, reliable_threshold=0.02 , edge_threshold=0.1):
+
+    # Вычисляем дельту и проверяем надежность
+    delta = np.abs(result['mean_rgb'] - result['median_rgb'])
+    is_reliable = False
+    normalized_delta = np.mean(delta) / (np.mean(result['mean_rgb']) + 1e-6)
+
+    size_factor = np.clip(np.log10(min_pixels_per_channel / 64), -1, 1)
+    adapted_threshold = reliable_threshold * (1 - 0.3 * size_factor)
+    adapted_threshold = min(adapted_threshold, 0.2)  # Разумный максимум
+    is_reliable = (normalized_delta <= adapted_threshold) and (edge_score <= edge_threshold)
+
+
+    # Формируем итоговый результат
+    return {
+        'mean_rgb': result['mean_rgb'],
+        'median_rgb': result['median_rgb'],
+        'std_rgb': result['std_rgb'],
+
+        'is_RGB': result['is_RGB'],
+        'mean_rgb_n': result['mean_rgb'] / max_val,
+        'median_rgb_n': result['median_rgb'] / max_val,
+
+        'delta': delta,
+        'normalized_delta': normalized_delta,
+        'reliable':is_reliable,
+        'method': result['method'],
+        'edge_score': edge_score  # New field
+    }
+
+
+def analyze_patch(patch, p_info, min_pixels_per_channel):
     """
     Анализирует патч изображения и возвращает его средние значения RGB.
 
@@ -116,7 +192,7 @@ def analyze_patch(patch, p_info,  reliable_threshold=0.02 , edge_threshold=0.25)
             - reliable: Флаг надежности патча
             - method: Использованный метод анализа
     """
-    # Проверяем размер патча для определения метода обработки
+
     height, width = patch.shape[:2]
     min_pixels_per_channel = height * width
 
@@ -146,38 +222,18 @@ def analyze_patch(patch, p_info,  reliable_threshold=0.02 , edge_threshold=0.25)
         }
     elif min_pixels_per_channel <= 900:
         # Маленький патч: плотная регулярная выборка из центра
-        result = process_small_patch(patch, p_info)
+        result = process_small_patch(patch, p_info, max_val)
         method = "small_patch_sampling"
     elif min_pixels_per_channel <= 3600:
         # Средний патч: центральная зона 50% по ширине
-        result = process_medium_patch(patch, p_info)
+        #result = process_medium_patch(patch, p_info, max_val)
+        result = process_large_patch(patch, p_info, max_val)
         method = "medium_patch_central_zone"
     else:
         # Большой патч: маска по гауссу или кругу
-        result = process_large_patch(patch, p_info)
+        result = process_large_patch(patch, p_info, max_val)
         method = "large_patch_gaussian_mask"
-
-    # Вычисляем дельту и проверяем надежность
-    delta = np.abs(result['mean_rgb'] - result['median_rgb'])
-    is_reliable = False
-    normalized_delta = np.mean(delta) / (np.mean(result['mean_rgb']) + 1e-6)
-
-    if min_pixels_per_channel > 32:  # Менее 4x4 пикселей на канал
-        adapted_threshold = reliable_threshold * (100 / min_pixels_per_channel) ** 0.5
-        adapted_threshold = min(adapted_threshold, 0.1)  # Максимальный порог 10%
-        is_reliable = (normalized_delta <= adapted_threshold) and (edge_score <= edge_threshold)
-
-    # Формируем итоговый результат
-    return {
-        'mean_rgb': result['mean_rgb'],
-        'median_rgb': result['median_rgb'],
-        'std_rgb': result['std_rgb'],
-        'delta': delta,
-        'normalized_delta': normalized_delta,
-        'reliable':is_reliable,
-        'method': method,
-        'edge_score': edge_score  # New field
-    }
+    return result
 
 def detect_edge_artifacts(patch):
     """Detect potential edge artifacts in patch"""
@@ -260,7 +316,7 @@ def std_analyze(patch, bmask_rgb):
     return mean_rgb, median_rgb, std_rgb
 
 
-def process_small_patch(patch, p_info):
+def process_small_patch(patch, p_info, bit_depth = 1):
     """
     Обработка маленьких патчей (≤30×30):
     - Плотная регулярная выборка из центра
@@ -271,6 +327,11 @@ def process_small_patch(patch, p_info):
     Returns:
         dict: Словарь с mean_rgb и median_rgb
     """
+
+    if not p_info:
+        patch = scale_patch_down(patch, 10)
+
+
     # Применяем размытие по Гауссу для устранения шума
     blurred_patch = gaussian_filter(patch.astype(np.float32), sigma=1.2, mode='reflect')
 
@@ -302,8 +363,7 @@ def process_small_patch(patch, p_info):
         'std_rgb': rez[2]
     }
 
-
-def process_medium_patch(patch, p_info):
+def process_medium_patch(patch, p_info, bit_depth = 1):
     """
     Обработка средних патчей (30×30 - 60×60):
     - Центральная зона 50% по ширине
@@ -315,6 +375,10 @@ def process_medium_patch(patch, p_info):
     Returns:
         dict: Словарь с mean_rgb и median_rgb
     """
+    if not p_info:
+        patch = scale_patch_down(patch, 30)
+
+
     # Применяем размытие по Гауссу
     blurred_patch = gaussian_filter(patch.astype(float), sigma=1.2, mode='reflect')
 
@@ -354,16 +418,34 @@ def weighted_std(values, weights):
     variance = np.average((values - average) ** 2, weights=weights)
     return np.sqrt(variance)
 
-def process_large_patch(patch, p_info):
+def process_large_patch(patch, p_info = None, bit_depth = 1):
     """
     Обработка больших патчей (>60×60):
     - Маска по гауссу или кругу
     - Взвешенное среднее
     """
-    # Применяем размытие по Гауссу
-    blurred_patch = gaussian_filter(patch.astype(float), sigma=1.5, mode='reflect')
+
+    if not p_info:
+        print("")
+        #patch = cv2.GaussianBlur(patch, (15, 15), 3.5)
+        h, w = patch.shape[:2]
+        patch = cv2.resize(patch, (w//4, h//4), interpolation=cv2.INTER_AREA)
+        patch = cv2.GaussianBlur(patch, (0, 0), 1.5)
+        patch = cv2.resize(patch, (w, h), interpolation=cv2.INTER_AREA)
+        #patch= pca_filter_scaled(patch)
+        #patch=np.clip(patch, 0, bit_depth).astype(np.uint16)
+
+        # Применяем размытие по Гауссу
+    blurred_patch = patch.astype(float)
+    #blurred_patch = np.stack([
+    #    gaussian_filter(patch[:, :, i].astype(float), sigma=0.2, mode='nearest')
+    #    for i in range(3)
+    #], axis=2)
+
+    #blurred_patch = patch
 
     # Создаем маску по Гауссу
+    #h, w = patch.shape[:2]
     h, w = patch.shape[:2]
     mask = gaussian_mask(h, w, sigma_scale=0.33)
 
@@ -390,18 +472,29 @@ def process_large_patch(patch, p_info):
 
     else:
         # RGB: применяем маску к каждому каналу
-        masked_r = blurred_patch[:, :, 0] * mask
-        masked_g = blurred_patch[:, :, 1] * mask
-        masked_b = blurred_patch[:, :, 2] * mask
+        # RGB: применяем маску к каждому каналу
+        # Извлекаем только замаскированные пиксели
+        valid_r = blurred_patch[:, :, 0][mask > 0]
+        valid_g = blurred_patch[:, :, 1][mask > 0]
+        valid_b = blurred_patch[:, :, 2][mask > 0]
 
-        sum_mask = np.sum(mask)
-        mean_r = np.sum(masked_r) / sum_mask
-        mean_g = np.sum(masked_g) / sum_mask
-        mean_b = np.sum(masked_b) / sum_mask
+        # Усеченная выборка - убираем тени и пересветы
+        p25_r, p90_r = np.percentile(valid_r, [25, 90])
+        p25_g, p90_g = np.percentile(valid_g, [25, 90])
+        p25_b, p90_b = np.percentile(valid_b, [25, 90])
 
-        std_r = np.std(masked_r)
-        std_g = np.std(masked_g)
-        std_b = np.std(masked_b)
+        clean_r = valid_r[(valid_r >= p25_r) & (valid_r <= p90_r)]
+        clean_g = valid_g[(valid_g >= p25_g) & (valid_g <= p90_g)]
+        clean_b = valid_b[(valid_b >= p25_b) & (valid_b <= p90_b)]
+
+        # Теперь mean и std считаются от одного и того же "чистого" множества
+        mean_r = np.mean(clean_r)
+        mean_g = np.mean(clean_g)
+        mean_b = np.mean(clean_b)
+
+        std_r = np.std(clean_r, ddof=1)
+        std_g = np.std(clean_g, ddof=1)
+        std_b = np.std(clean_b, ddof=1)
 
     mean_rgb = np.array([mean_r, mean_g, mean_b])
     std_rgb = np.array([std_r, std_g, std_b])
@@ -433,13 +526,221 @@ def process_large_patch(patch, p_info):
         ])
     else:  # RGB
         center_patch = blurred_patch[y_start:y_end, x_start:x_end]
-        median_rgb = np.median(center_patch.reshape(-1, 3), axis=0)
+        center_flat = center_patch.reshape(-1, 3)
+
+        # Усеченная выборка для центральных пикселей
+        center_r, center_g, center_b = center_flat[:, 0], center_flat[:, 1], center_flat[:, 2]
+
+        p25_cr, p90_cr = np.percentile(center_r, [25, 90])
+        p25_cg, p90_cg = np.percentile(center_g, [25, 90])
+        p25_cb, p90_cb = np.percentile(center_b, [25, 90])
+
+        clean_center_r = center_r[(center_r >= p25_cr) & (center_r <= p90_cr)]
+        clean_center_g = center_g[(center_g >= p25_cg) & (center_g <= p90_cg)]
+        clean_center_b = center_b[(center_b >= p25_cb) & (center_b <= p90_cb)]
+
+        median_rgb = np.array([
+            np.median(clean_center_r),
+            np.median(clean_center_g),
+            np.median(clean_center_b)
+        ])
+
+    print(f"Mean RGB: {mean_rgb}")
+    print(f"Std RGB: {std_rgb}")
+    print(f"Median RGB: {median_rgb}")
 
     return {
         'mean_rgb': mean_rgb,
         'median_rgb': median_rgb,
         'std_rgb': std_rgb
     }
+
+
+def pca_filter_scaled(patch):
+    # Даунскейл
+    h0, w0 = patch.shape[:2]
+    m = max(w0, h0)
+    if m > 64:
+        scale = 64 / m
+        h_s = int(h0 * scale)
+        w_s = int(w0 * scale)
+        # Приведение к float32
+        # Даунскейл
+        small = cv2.resize(patch, (w_s, h_s) ,  interpolation=cv2.INTER_AREA)
+        small = small.astype(np.float32)
+
+
+        # PCA
+        h, w, c = small.shape
+        reshaped = small.reshape(-1, 3)
+        mean = np.mean(reshaped, axis=0)
+        centered = reshaped - mean
+
+        U, S, Vt = np.linalg.svd(centered, full_matrices=False)
+        pc1 = np.dot(centered, Vt[0])  # первая главная компонента
+        patch = np.outer(pc1, Vt[0]) + mean
+        patch = patch.reshape(h, w, 3)
+
+        # Апскейл
+        patch = cv2.GaussianBlur(patch, (0, 0), 1.5) #1.8
+        patch = cv2.resize(patch, (w0, h0),  interpolation=cv2.INTER_CUBIC)
+
+        # Обратное приведение (если надо)
+    return patch
+
+
+def process_large_patch_lab(patch):
+    """
+    Обработка Lab-патча с использованием взвешенного среднего,
+    медианы и стандартного отклонения. Предполагается, что патч
+    находится в Lab-пространстве (D50) и передан в виде float массива.
+    """
+
+    h, w = patch.shape[:2]
+
+    # Создаём гауссову маску
+    mask = gaussian_mask(h, w, sigma_scale=0.33)
+
+    # Извлекаем только замаскированные пиксели
+    valid_l = patch[:, :, 0][mask > 0]
+    valid_a = patch[:, :, 1][mask > 0]
+    valid_b = patch[:, :, 2][mask > 0]
+
+    # Усечённые процентили — применим только к L (контраст)
+    p25_l, p90_l = np.percentile(valid_l, [25, 90])
+    clean_l = valid_l[(valid_l >= p25_l) & (valid_l <= p90_l)]
+
+    mean_lab = np.array([
+        np.mean(clean_l),
+        np.mean(valid_a),
+        np.mean(valid_b)
+    ])
+
+    std_lab = np.array([
+        np.std(clean_l, ddof=1),
+        np.std(valid_a, ddof=1),
+        np.std(valid_b, ddof=1)
+    ])
+
+    # Центральная область
+    center_radius = int(min(h, w) * 0.3)
+    cy, cx = h // 2, w // 2
+    y_start = max(0, cy - center_radius)
+    y_end = min(h, cy + center_radius)
+    x_start = max(0, cx - center_radius)
+    x_end = min(w, cx + center_radius)
+
+    center_patch = patch[y_start:y_end, x_start:x_end]
+    center_flat = center_patch.reshape(-1, 3)
+
+    # Медиана без усечений (по всем компонентам)
+    median_lab = np.median(center_flat, axis=0)
+
+    return {
+        'mean_lab': mean_lab,
+        'std_lab': std_lab,
+        'median_lab': median_lab
+    }
+
+def lab_summary_to_rgb(summary_lab, max_val):
+    return {
+        k.replace('lab', 'rgb'): lab_d50_to_linear_rgb_d50(v, max_val=max_val)
+        for k, v in summary_lab.items()
+        for k, v in summary_lab.items()
+    }
+
+
+def make_camera_colourspace(cam2xyz: np.ndarray) :
+    """
+    Создаёт RGB_Colourspace из матрицы camera_to_XYZ.
+
+    Аргументы:
+        cam2xyz: np.ndarray 3×3 — матрица преобразования camera RGB → XYZ (в D65)
+
+    Возвращает:
+        RGB_Colourspace с нормализованной матрицей, обратной матрицей и D65 whitepoint.
+    """
+    # Нормализация по сумме Y (второй строки)
+    cam2xyz = cam2xyz / cam2xyz[1].sum()
+    white_rgb = np.array([1.0, 1.0, 1.0])
+    camera_whitepoint = np.dot(cam2xyz, white_rgb)[:3]
+    camera_whitepoint = camera_whitepoint / camera_whitepoint[1]
+
+    if cam2xyz.shape == (4, 3):
+        xyz_primaries= cam2xyz[:3].T
+    else:
+        xyz_primaries = cam2xyz.T  # Транспонируем для получения [R_xyz, G_xyz, B_xyz]
+
+    return {
+       'name': 'CameraRGB_ForwardOnly',
+       'whitepoint': camera_whitepoint,
+       'matrix_RGB_to_XYZ': xyz_primaries,
+       'matrix_XYZ_to_RGB': None
+    }
+
+def rgb_linear_to_lab_d50(rgb_patch, colourspace, max_val):
+    """
+    Преобразует линейный RGB-патч из произвольного цветового пространства камеры
+    в Lab D50 с использованием адаптации Von Kries.
+
+    Parameters:
+        rgb_patch : array_like
+            Массив из 3 значений (R, G, B) в диапазоне 0–65535 (линейное RGB).
+        colourspace : RGB_Colourspace
+            Цветовое пространство камеры (с линейной матрицей RGB→XYZ и белой точкой).
+
+    Returns:
+        Lab-представление патча, адаптированное к D50.
+    """
+    # 1. Приводим к диапазону [0, 1]
+    rgb = np.clip(np.array(rgb_patch) / max_val, 0.0, 1.0)
+
+    # 2. RGB → XYZ в цвет. пространстве камеры
+    xyz_camera_wp = np.einsum('ij,hwj->hwi', colourspace['matrix_RGB_to_XYZ'], rgb)
+
+    # 3. D65 → D50 адаптация
+    xyz_d50 = chromatic_adaptation_VonKries(
+        xyz_camera_wp,
+        colourspace['whitepoint'],
+        [0.9642, 1.0000, 0.8251]  # стандартный D50 whitepoint
+    )
+
+    # 4. XYZ (D50) → Lab (D50)
+    lab = XYZ_to_Lab(xyz_d50, [0.9642, 1.0000, 0.8251])
+    return lab
+
+
+def lab_d50_to_linear_rgb_d50(lab_patch, max_val):
+    """
+    Преобразует Lab (D50) в линейное RGB D50.
+    Остается в D50 - не возвращается в камеру!
+
+    Parameters:
+        lab_patch : array_like
+            Lab-представление патча (D50 whitepoint).
+        max_val : float
+            Максимальное значение для выхода (обычно 65535 для 16-bit).
+
+    Returns:
+        Массив (R, G, B) в линейном RGB D50, масштабированный к max_val.
+    """
+    # 1. Lab (D50) → XYZ (D50)
+    xyz_d50 = Lab_to_XYZ(lab_patch, [0.9642, 1.0000, 0.8251])
+
+    # 2. XYZ (D50) → Linear RGB (D50)
+    # Используем sRGB матрицу, но БЕЗ гамма-коррекции
+    rgb_linear_d50 = XYZ_to_RGB(
+        XYZ=xyz_d50,
+        colourspace=RGB_COLOURSPACES['ProPhoto RGB'],
+        illuminant=[0.9642, 1.0000, 0.8251],  # D50 whitepoint
+        chromatic_adaptation_transform=None  # Не нужна адаптация, так как источник и цель - D50
+    )
+
+
+    # 3. Масштабируем к нужному диапазону
+    rgb_scaled = np.clip(rgb_linear_d50 * max_val, 0, max_val).round().astype(int)
+    return rgb_scaled
+
 
 def trimmed_mean(channel, trim=0.1):
     """

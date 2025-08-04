@@ -44,13 +44,13 @@ def convert_cht_to_pixels(cht_data: dict, image_width: int, image_height: int, d
 
     scale_factor = 1.0
     with_demo = bool(dpi)
-    calc_name = "corner_demo"
+    calc_name = 'corner_demo'
     if not with_demo:
-        cht_w = cht_data['corner_ref'][3][0] - cht_data['corner_ref'][0][0]
-        cht_h = cht_data['corner_ref'][3][1] - cht_data['corner_ref'][0][1]
+        cht_w = cht_data['corner_ref'][2][0] - cht_data['corner_ref'][0][0]
+        cht_h = cht_data['corner_ref'][2][1] - cht_data['corner_ref'][0][1]
         scale_factor = min(image_width / cht_w,  image_height / cht_h)
         cht_data['corner'] = np.array(cht_data['corner_ref'], dtype=np.float32) * scale_factor
-        calc_name = "corner"
+        calc_name = 'corner'
     else:
         # Conversion factor: pixels = mm × dpi / 25.4
         scale_factor = dpi / 25.4
@@ -60,21 +60,21 @@ def convert_cht_to_pixels(cht_data: dict, image_width: int, image_height: int, d
         rgb_list = []
         idx = 0
 
-        for key, val in cht_data["patch_dict"].items():
+        for key, val in cht_data['patch_dict'].items():
             uv_list.append(val['uv'])
             uv_wh_list.append(val['uv_wh'])
-            rgb_list.append(val['rgb'])
+            rgb_list.append(val['rgb'])  # places to store readed values mean and avg rgb
             val['array_idx'] = idx
             idx += 1
 
         # Convert lists into numpy arrays
         cht_data["corner_demo"] = np.array(cht_data['corner_ref'], dtype=np.float32) * scale_factor
-        cht_data["RGB"] = np.array(rgb_list, dtype=np.uint32)
+        cht_data['RGB'] = np.array(rgb_list, dtype=np.uint32)
 
         cht_data['corner'] = np.array(cht_data['corner_ref'], dtype=np.float32) * scale_factor
 
-        cht_data["uv_wh"] = np.array(uv_wh_list, dtype=np.float32).reshape(-1, 1, 2)
-        cht_data["uv"] = np.array(uv_list, dtype=np.float32).reshape(-1, 1, 2)
+        cht_data['uv_wh'] = np.array(uv_wh_list, dtype=np.float32).reshape(-1, 1, 2)
+        cht_data['uv'] = np.array(uv_list, dtype=np.float32).reshape(-1, 1, 2)
 
 
     # Transform UV coordinates to screen coordinates
@@ -130,7 +130,7 @@ def adopt_corner_target(corners: np.ndarray, image_width: int, image_height: int
     # If still doesn't fit → apply rule-10 scaling (10px margins)
     if not _is_inside_np(corners, [0, 0, image_width, image_height]):
         corners[:]= np.array(
-            [[10, 10], [image_width - 10, 10], [10, image_height - 10], [image_width - 10, image_height - 10]],
+            [[10, 10], [image_width - 10, 10],  [image_width - 10, image_height - 10], [10, image_height - 10]],
             dtype=np.float32)
 
     return GENERIC_OK
@@ -227,7 +227,7 @@ def _transform_uv_to_screen(uv, corner):
         ...     print(f"Screen centre: {screen_points[0]}")  # [50, 50]
     """
 
-    uv_quad = np.array([[0, 0], [1, 0], [0, 1], [1, 1]], dtype=np.float32)
+    uv_quad = np.array([[0, 0], [1, 0], [1, 1], [0, 1]], dtype=np.float32)
     if not _is_valid_quad(corner) or not _quad_area(corner):
         return GENERIC_ERROR, np.array([])
 
@@ -236,7 +236,75 @@ def _transform_uv_to_screen(uv, corner):
 
     return GENERIC_OK, screen_pts
 
+
 def compute_patch_wh_aligned(uv, uv_wh, corner, scale_percent=100):
+    """
+    Патчи адаптируются к ориентации сетки.
+    Width всегда горизонтален в экране, height всегда вертикален.
+    """
+    scale = scale_percent / 100.0
+    uv_wh_scaled = uv_wh * scale
+    n = len(uv)
+
+    # 1. Определяем, как оси UV отображаются в экранное пространство
+    test_points = np.array([
+        [[0.5, 0.5]],  # центр
+        [[0.51, 0.5]],  # +U направление
+        [[0.5, 0.51]]  # +V направление
+    ])
+
+    ret, screen_test = _transform_uv_to_screen(test_points, corner)
+    if ret != GENERIC_OK:
+        return GENERIC_ERROR, None, None
+
+    center_screen = screen_test[0]
+    u_screen = screen_test[1] - center_screen  # как U отображается в экране
+    v_screen = screen_test[2] - center_screen  # как V отображается в экране
+
+    # 2. Определяем, какая ось более горизонтальная/вертикальная
+    u_is_horizontal = abs(u_screen[0]) > abs(u_screen[1])
+
+    # 3. Создаем смещения в UV в зависимости от ориентации
+    width_values = uv_wh_scaled[:, :, 0:1]
+    height_values = uv_wh_scaled[:, :, 1:2]
+    zeros = np.zeros_like(width_values)
+
+    if u_is_horizontal:
+        # U горизонтальная, V вертикальная (нормальная ориентация)
+        width_offset = np.concatenate([width_values, zeros], axis=2)  # width по U
+        height_offset = np.concatenate([zeros, height_values], axis=2)  # height по V
+    else:
+        # U вертикальная, V горизонтальная (поворот на 90°)
+        width_offset = np.concatenate([zeros, width_values], axis=2)  # width по V
+        height_offset = np.concatenate([height_values, zeros], axis=2)  # height по U
+
+    # 4. Объединяем все точки
+    all_points = np.concatenate([
+        uv,  # центры
+        uv + width_offset,  # точки ширины (горизонталь в экране)
+        uv + height_offset  # точки высоты (вертикаль в экране)
+    ], axis=0)
+
+    # 5. Одно преобразование для всех точек
+    ret, screen_points = _transform_uv_to_screen(all_points, corner)
+    if ret != GENERIC_OK:
+        return GENERIC_ERROR, None, None
+
+    # 6. Разделяем результат
+    centers = screen_points[:n].reshape(-1, 2)
+    screen_width_pts = screen_points[n:2 * n].reshape(-1, 2)
+    screen_height_pts = screen_points[2 * n:3 * n].reshape(-1, 2)
+
+    # 7. Вычисляем размеры
+    width = np.linalg.norm(screen_width_pts - centers, axis=1)
+    height = np.linalg.norm(screen_height_pts - centers, axis=1)
+
+    patch_wh = np.column_stack([width, height])
+
+    return GENERIC_OK, centers, patch_wh
+
+
+def _compute_patch_wh_aligned(uv, uv_wh, corner, scale_percent=100):
     """
     Оптимизированное преобразование для формата (-1, 1, 2).
     """

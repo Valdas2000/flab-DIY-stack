@@ -23,7 +23,8 @@ class Ui_show_ghaphics(object):
     def setupUi(self, show_ghaphics):
         if not show_ghaphics.objectName():
             show_ghaphics.setObjectName(u"show_ghaphics")
-        show_ghaphics.resize(648, 491)
+        show_ghaphics.resize(1134, 491)
+        show_ghaphics.setMinimumSize(QSize(1134, 491))
         self.horizontalLayout = QHBoxLayout(show_ghaphics)
         self.horizontalLayout.setObjectName(u"horizontalLayout")
         self.wd_graphics = QWidget(show_ghaphics)
@@ -38,14 +39,20 @@ class Ui_show_ghaphics(object):
 
         self.grp_controls = QGroupBox(show_ghaphics)
         self.grp_controls.setObjectName(u"grp_controls")
-        self.grp_controls.setMinimumSize(QSize(140, 0))
-        self.grp_controls.setMaximumSize(QSize(160, 16777215))
+        self.grp_controls.setMinimumSize(QSize(200, 0))
+        self.grp_controls.setMaximumSize(QSize(400, 16777215))
         self.verticalLayout = QVBoxLayout(self.grp_controls)
         self.verticalLayout.setObjectName(u"verticalLayout")
         self.label = QLabel(self.grp_controls)
         self.label.setObjectName(u"label")
-        self.label.setTextFormat(Qt.TextFormat.PlainText)
+        sizePolicy1 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Expanding)
+        sizePolicy1.setHorizontalStretch(0)
+        sizePolicy1.setVerticalStretch(0)
+        sizePolicy1.setHeightForWidth(self.label.sizePolicy().hasHeightForWidth())
+        self.label.setSizePolicy(sizePolicy1)
+        self.label.setTextFormat(Qt.TextFormat.MarkdownText)
         self.label.setAlignment(Qt.AlignmentFlag.AlignLeading|Qt.AlignmentFlag.AlignLeft|Qt.AlignmentFlag.AlignTop)
+        self.label.setTextInteractionFlags(Qt.TextInteractionFlag.LinksAccessibleByMouse|Qt.TextInteractionFlag.TextSelectableByMouse)
 
         self.verticalLayout.addWidget(self.label)
 

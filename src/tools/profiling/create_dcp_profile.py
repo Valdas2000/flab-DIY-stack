@@ -534,3 +534,26 @@ def test_dcp_creation():
 # Для тестирования
 if __name__ == "__main__":
     test_dcp_creation()
+    # color checker
+    # colprof -v -D "Scanner Profile" -C "Your Profile Description" -q m -S Adobe-RGB -wp colorchecker.ti3
+    # 220 patches
+    # colprof -v -D "Scanner Profile" -C "Description" -q m -S Adobe-RGB -wp target.ti3
+    # colprof -v -D "Scanner 220 Profile" -C "High quality LUT profile" -q h -S Adobe-RGB -wp target.ti3
+
+    # Scanner Profile
+    # colprof -v -qh (-M) -S Adobe-RGB -wp -A bradford input.ti3
+    # Scanner Profile 600+ drift stable   **Matrix + High Quality**
+    # colprof -v -qh (-M) -S Adobe-RGB -wp -A bradford input.ti3
+    # Scanner Profile 600+ color precise  **LUT + High Quality**
+    # colprof -v -qh -S Adobe-RGB -wp -A bradford input.ti3
+
+    # Scanner Profile с полными CAM матрицами
+    # colprof -v -qh -S Adobe-RGB -wp -A bradford input.ti3
+
+    # BW Reverce
+    # ЧБ Scanner Reverse Profile для Capture One
+    # colprof -v -q h -a m -Z b -u input.ti3
+    # Matrix + ограничение диапазона
+    # colprof -v -q h -a m -Z b -u -R input.ti3
+
+

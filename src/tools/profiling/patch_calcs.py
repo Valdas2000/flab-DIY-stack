@@ -10,21 +10,29 @@ _workflows = {
     "DCP": {
         'accuracy_weight': 0.5, 'stability_weight': 0.3, 'reliability_weight': 0.2,
         'accuracy_tolerance': 0.01, 'stability_tolerance': 25.0,
-        'thresholds': [0.9, 0.8, 0.7, 0.6],
+        'thresholds': [0.6, 0.7, 0.8, 0.9],
         'delta_e': ["< 1.5 ΔE", "< 2.0 ΔE", "< 3.0 ΔE", "< 4.0 ΔE"],
         'grades': ["A+ PROFESSIONAL", "A HIGH QUALITY", "B+ GOOD", "B ACCEPTABLE"]
     },
     "ICC": {
         'accuracy_weight': 0.6, 'stability_weight': 0.25, 'reliability_weight': 0.15,
         'accuracy_tolerance': 0.008, 'stability_tolerance': 20.0,
-        'thresholds': [0.95, 0.85, 0.75, 0.65],
+        'thresholds': [0.65, 0.75, 0.85, 0.95],
         'delta_e': ["< 1.0 ΔE", "< 1.5 ΔE", "< 2.5 ΔE", "< 3.5 ΔE"],
         'grades': ["A+ PROFESSIONAL", "A HIGH QUALITY", "B+ GOOD", "B ACCEPTABLE"]
     },
     "LUT": {
         'accuracy_weight': 0.4, 'stability_weight': 0.4, 'reliability_weight': 0.2,
         'accuracy_tolerance': 0.012, 'stability_tolerance': 20.0,
-        'thresholds': [0.85, 0.75, 0.65, 0.55],
+        'thresholds': [0.55, 0.65, 0.75, 0.85],
+        'delta_e': ["< 2.0 ΔE", "< 3.0 ΔE", "< 4.5 ΔE", "< 6.0 ΔE"],
+        'grades': ["A+ EXCELLENT", "A VERY GOOD", "B+ GOOD", "B ACCEPTABLE"]
+    },
+
+    "Cineon": {
+        'accuracy_weight': 0.4, 'stability_weight': 0.4, 'reliability_weight': 0.2,
+        'accuracy_tolerance': 0.012, 'stability_tolerance': 20.0,
+        'thresholds': [0.55, 0.65, 0.75, 0.85],
         'delta_e': ["< 2.0 ΔE", "< 3.0 ΔE", "< 4.5 ΔE", "< 6.0 ΔE"],
         'grades': ["A+ EXCELLENT", "A VERY GOOD", "B+ GOOD", "B ACCEPTABLE"]
     },
@@ -33,21 +41,21 @@ _workflows = {
     "ICC_NEGATIVE": {
         'accuracy_weight': 0.45, 'stability_weight': 0.35, 'reliability_weight': 0.2,
         'accuracy_tolerance': 0.015, 'stability_tolerance': 18.0,
-        'thresholds': [0.88, 0.78, 0.68, 0.58],
+        'thresholds': [0.58, 0.68, 0.78, 0.88],
         'delta_e': ["< 2.5 ΔE", "< 4.0 ΔE", "< 6.0 ΔE", "< 8.0 ΔE"],
         'grades': ["A+ EXCELLENT", "A VERY GOOD", "B+ GOOD", "B NEEDS WORK"]
     },
     "LUT_COLOR_NEG": {
         'accuracy_weight': 0.35, 'stability_weight': 0.45, 'reliability_weight': 0.2,
         'accuracy_tolerance': 0.018, 'stability_tolerance': 15.0,
-        'thresholds': [0.82, 0.72, 0.62, 0.52],
+        'thresholds': [0.52, 0.62, 0.72, 0.82],
         'delta_e': ["< 3.5 ΔE", "< 5.0 ΔE", "< 7.0 ΔE", "< 9.0 ΔE"],
         'grades': ["A+ EXCELLENT", "A VERY GOOD", "B+ GOOD", "B BASIC QUALITY"]
     },
     "LUT_BW_NEG": {
         'accuracy_weight': 0.3, 'stability_weight': 0.5, 'reliability_weight': 0.2,
         'accuracy_tolerance': 0.020, 'stability_tolerance': 12.0,  # Stricter noise tolerance
-        'thresholds': [0.80, 0.70, 0.60, 0.50],
+        'thresholds': [0.50, 0.60, 0.70, 0.80],
         'delta_e': ["Excellent tonal range", "Very good tones", "Good tones", "Basic quality"],
         'grades': ["A+ ARCHIVAL", "A PROFESSIONAL", "B+ GOOD", "B AMATEUR"]
     }
@@ -64,40 +72,60 @@ _patch_workflows = {
             'delta_tolerance': 0.004,
             'noise_tolerance': 8.0,  # Strict threshold for digital
             'edge_tolerance': 0.1,
-            'thresholds': [0.9, 0.8, 0.7, 0.6]
+            'thresholds': [0.6, 0.7, 0.8, 0.9]
         },
 
         "ICC": {
             'delta_weight': 0.5, 'noise_weight': 0.25, 'edge_weight': 0.15, 'reliable_weight': 0.1,
             'delta_tolerance': 0.003, 'noise_tolerance': 6.0, 'edge_tolerance': 0.08,
-            'thresholds': [0.95, 0.85, 0.75, 0.65]
+            'thresholds': [0.65, 0.75, 0.85, 0.95]
         },
 
         "LUT": {
             'delta_weight': 0.35, 'noise_weight': 0.35, 'edge_weight': 0.2, 'reliable_weight': 0.1,
             'delta_tolerance': 0.005, 'noise_tolerance': 10.0, 'edge_tolerance': 0.12,
-            'thresholds': [0.85, 0.75, 0.65, 0.55]
+            'thresholds': [0.55, 0.65, 0.75, 0.85]
         },
 
-        # ===== NEGATIVE (FILM) WORKFLOWS =====
+        "Cineon": {
+            'delta_weight': 0.35, 'noise_weight': 0.35, 'edge_weight': 0.2, 'reliable_weight': 0.1,
+            'delta_tolerance': 0.005, 'noise_tolerance': 10.0, 'edge_tolerance': 0.12,
+            'thresholds': [0.55, 0.65, 0.75, 0.85]
+        },
+
+    # ===== NEGATIVE (FILM) WORKFLOWS =====
         "ICC_NEGATIVE": {
             'delta_weight': 0.4, 'noise_weight': 0.2, 'edge_weight': 0.3, 'reliable_weight': 0.1,
             'delta_tolerance': 0.006, 'noise_tolerance': 18.0, 'edge_tolerance': 0.15,  # Softer for film
-            'thresholds': [0.88, 0.78, 0.68, 0.58]
+            'thresholds': [0.58, 0.68, 0.78, 0.58]
         },
 
         "LUT_COLOUR_NEG": {  # Colour negative
             'delta_weight': 0.35, 'noise_weight': 0.2, 'edge_weight': 0.35, 'reliable_weight': 0.1,
             'delta_tolerance': 0.007, 'noise_tolerance': 20.0, 'edge_tolerance': 0.18,
-            'thresholds': [0.82, 0.72, 0.62, 0.52]
+            'thresholds': [0.52, 0.62, 0.72, 0.82]
         },
 
         "LUT_BW_NEG": {  # Black and white negative - softest thresholds for grain
             'delta_weight': 0.4, 'noise_weight': 0.15, 'edge_weight': 0.35, 'reliable_weight': 0.1,
             'delta_tolerance': 0.008, 'noise_tolerance': 25.0, 'edge_tolerance': 0.20,  # Very soft for grain
-            'thresholds': [0.80, 0.70, 0.60, 0.50]
+            'thresholds': [0.50, 0.60, 0.70, 0.80]
         }
     }
+
+def nrgb_to_qrgb(rgb_tuple):
+    """
+    Convert normalised RGB tuple to QRgb format
+    Args:
+        rgb_tuple: tuple/list of normalised RGB values (0.0-1.0)
+    Returns:
+        int: QRgb value (0xFFRRGGBB)
+    """
+    # Convert to 8-bit and pack into QRgb
+    r, g, b = (np.clip(rgb_tuple, 0, 1) * 255).astype(int)
+    return (255 << 24) | (r << 16) | (g << 8) | b
+
+
 
 def expected_artifact_quality(patch_data, is_negative=False, artifact_type="DCP"):
     """
@@ -190,7 +218,7 @@ def _analyze_patch_measurement_quality(patch_data):
     # Mean accuracy (normalized deviation from expected values)
     # Simple approximation: lower std deviation = higher accuracy
     mean_rgb_std = np.mean(np.std(rgb_array, axis=0))
-    mean_accuracy = mean_rgb_std / 255.0  # Normalize to 0-1 range
+    mean_accuracy = mean_rgb_std / 65535  # Normalize to 0-1 range
 
     # Stability per channel (RGB standard deviation)
     stability_rgb = np.std(rgb_array, axis=0).tolist()
@@ -238,7 +266,7 @@ def _predict_workflow_quality(analysis, workflow_type):
     # Determine quality grade
     grade_index = 3  # Default to lowest grade
     for i, threshold in enumerate(params['thresholds']):
-        if overall_score >= threshold:
+        if overall_score <= threshold:
             grade_index = i
             break
 
@@ -445,7 +473,7 @@ def _format_quality_results(quality, artifact_type):
     return '\n'.join(lines)
 
 
-def evaluate_patches_quality(patches, workflow="DCP") -> tuple[int,dict]:
+def evaluate_patches_quality(patches, workflow="DCP") -> tuple[int,list[tuple[int,int,int]]]:
     """
     Quality of patches considering workflow
     4 components: accuracy + noise + structure + reliability
@@ -453,7 +481,7 @@ def evaluate_patches_quality(patches, workflow="DCP") -> tuple[int,dict]:
 
     rez = []
     for patch in patches:
-        params = _patch_workflows.get(workflow, _patch_workflows["DCP"])
+        params = _patch_workflows.get(workflow, _patch_workflows[workflow])
 
         # Normalisation of all 4 metrics
         delta_norm = max(0.0, 1.0 - (patch['normalized_delta'] / params['delta_tolerance']))
@@ -475,11 +503,11 @@ def evaluate_patches_quality(patches, workflow="DCP") -> tuple[int,dict]:
         for i, threshold in enumerate(params['thresholds']):
             if not patch['reliable']:
                 colour_index = QUALITY_COLOURS_16BIT_NON_RELATABLE
-            if overall_score >= threshold:
+            if overall_score <= threshold:
                 colour_index = i
                 break
         # colour_index, overall_score
-        rez.append(colour_index)
+        rez.append([colour_index, nrgb_to_qrgb(patch['mean_rgb_n']), nrgb_to_qrgb(patch['median_rgb_n'])])
 
     return GENERIC_OK, rez
 

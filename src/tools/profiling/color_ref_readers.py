@@ -1,4 +1,9 @@
 import traceback
+import locale
+from datetime import datetime
+from ti3_calcs import chromatic_adaptation_brdf, illuminants, normalize_patch_data
+import numpy as np
+from colour import Lab_to_XYZ, XYZ_to_xy, xy_to_CCT
 
 from pyparsing import results
 
@@ -14,8 +19,6 @@ def tr(text):
     return text
 
 
-import numpy as np
-from colour import Lab_to_XYZ, XYZ_to_xy, xy_to_CCT
 xy_to_CCT_Hernandez1999 = xy_to_CCT
 
 
@@ -82,28 +85,115 @@ def add_xyz_targets(patches, illuminant_xy):
 
 def write_txt2ti3_patches(patches, field_to_output, input_cgats_filename, output_filename):
     """Write patches to txt2ti3 format maintaining original file sequence"""
+    # check input_cgats_filename extension to ti2
+    use_sample_id_as_number = False
+    if input_cgats_filename.split('.')[-1] == 'ti2':
+        use_sample_id_as_number = True
 
-    patch_sequence, xyz = get_patch_names(input_cgats_filename)
-    with_zero, without_zero = create_patch_name_variants(patch_sequence)
+    patch_sequence, xyz, patch_loc = _get_patch_names(input_cgats_filename)
+    with_zero, without_zero = _create_patch_name_variants(patch_sequence)
     the_list = with_zero
-    if the_list[0]  not in patches.keys():
+
+    is_ok = True
+    for val in the_list:
+        if val not in patches.keys():
+            is_ok = False
+            break
+    if not is_ok:
+        is_ok = True
         the_list = without_zero
-        if the_list[0]  not in patches.keys():
+        for val in the_list:
+            if val not in patches.keys():
+                is_ok = False
+                break
+        if not is_ok:
+            print("ERROR: Key schemas of measurements and reference are not compatible")
             return GENERIC_ERROR
 
+    rgb_array = []
+    stdev=[]
+    for patch_name in the_list:
+        rgb_array.append(patches[patch_name][field_to_output])
+        stdev.append(patches[patch_name]['std_rgb'])
+
+    xyz_d50 = xyz
+
+    target_white = np.array([95.106486, 100.000000, 108.844025])
+
+
+    rgb_100, stdev_100 = normalize_patch_data(rgb_array, stdev, xyz_d50, 100,  target_white)
     outp = []
     for i, patch_name in enumerate(the_list):
-        rgb_array = patches[patch_name][field_to_output]
+        #sample_id = patch_loc[i] if use_sample_id_as_number else patch_sequence[i]
+        #sample_id = patch_sequence[i]
         outp.append({
-            'SAMPLE_ID': patch_sequence[i],  # P01, P02, etc.
-            'RGB': rgb_array,
-            'XYZ': xyz[i]
+            'SAMPLE_ID': patch_loc[i],   # A1 A2 A3 or 1 2 3
+            'SAMPLE_LOC': patch_sequence[i],
+            'XYZ': xyz_d50[i],
+            'RGB': rgb_100[i],
+            'STDEV': stdev_100[i]
         })
-    _export_patches_for_txt2ti3(outp, output_filename)
+    #_export_patches_for_txt2ti3(outp, output_filename, is_rgb=True)
+    #_export_patches_for_txt2ti3(outp, 'xyz.cie', is_rgb=False)
+    create_camera_ti3_d50(outp, output_filename)
+
     return
 
+# XYZ значения должны быть в D50!
+def create_camera_ti3_d50(patch_data, output_filename):
+    try:
+        locale.setlocale(locale.LC_TIME, 'en_US.UTF-8')
+    except locale.Error:
+        try:
+            locale.setlocale(locale.LC_TIME, 'English_United States.1252')  # Windows
+        except locale.Error:
+            locale.setlocale(locale.LC_TIME, 'C')  # Fallback
 
-def create_patch_name_variants(patch_names):
+    current_time = datetime.now().strftime("%a %b %d %H:%M:%S %Y")
+
+    with (open(output_filename, 'w') as f):
+        header = f"""CTI3
+DESCRIPTOR "Argyll Calibration Target chart information 3"
+ORIGINATOR "PatchReader flab-DIY-stack"
+CREATED "{current_time}"
+DEVICE_CLASS "INPUT"
+COLOR_REP "XYZ_RGB"
+
+NUMBER_OF_FIELDS 11
+BEGIN_DATA_FORMAT
+SAMPLE_ID SAMPLE_LOC XYZ_X XYZ_Y XYZ_Z RGB_R RGB_G RGB_B STDEV_R STDEV_G STDEV_B 
+END_DATA_FORMAT
+"""
+        f.write(header)
+        f.write(f'\nNUMBER_OF_SETS {len(patch_data)}\n')
+        f.write('BEGIN_DATA\n')
+
+        # Patch data
+        for patch in patch_data:
+            p_color = patch['RGB']
+            x_color = patch['XYZ']
+            stdev = patch['STDEV']
+
+            f.write(
+                    f"{patch['SAMPLE_ID']} "
+                    f'{patch['SAMPLE_LOC']} '
+                    f"{x_color[0]:.5f} "
+                    f"{x_color[1]:.5f} "
+                    f"{x_color[2]:.5f} "
+                    f"{p_color[0]:.5f} "
+                    f"{p_color[1]:.5f} "
+                    f"{p_color[2]:.5f} "
+                    f"{stdev[0]:.5f} "
+                    f"{stdev[1]:.5f} "
+                    f"{stdev[2]:.5f} "
+                    f"\n"
+                    )
+
+        f.write('END_DATA\n')
+
+
+
+def _create_patch_name_variants(patch_names):
     """
     Создает два варианта списка имен патчей: с ведущим нулем и без него
 
@@ -127,7 +217,7 @@ def create_patch_name_variants(patch_names):
 
     return with_zero, without_zero
 
-def _export_patches_for_txt2ti3( patch_data, output_filename):
+def _export_patches_for_txt2ti3( patch_data, output_filename, is_rgb=True):
     """Export RGB patches to txt2ti3 compatible format"""
 
 
@@ -136,11 +226,17 @@ def _export_patches_for_txt2ti3( patch_data, output_filename):
         # CGATS header
 
         f.write('CGATS.17\n')
-        f.write('COLOR_REP "RGB"\n')
+        if is_rgb:
+            f.write('COLOR_REP "RGB"\n')
+        else:
+            f.write('COLOR_REP "XYZ"\n')
         f.write('\n')
         f.write('NUMBER_OF_FIELDS 4\n')
         f.write('BEGIN_DATA_FORMAT\n')
-        f.write('SAMPLE_ID RGB_R RGB_G RGB_B\n')
+        if is_rgb:
+            f.write('SAMPLE_ID RGB_R RGB_G RGB_B\n')
+        else:
+            f.write('SAMPLE_ID XYZ_X XYZ_Y XYZ_Z\n')
         f.write('END_DATA_FORMAT\n')
         f.write('\n')
         f.write(f'NUMBER_OF_SETS {len(patch_data)}\n')
@@ -148,24 +244,27 @@ def _export_patches_for_txt2ti3( patch_data, output_filename):
 
         # Patch data
         for patch in patch_data:
-            rgb = patch['RGB']
-            f.write(f"{patch['SAMPLE_ID']}\t{rgb[0]:.3f}\t"
-                    f"{rgb[1]:.3f}\t{rgb[2]:.3f}\n")
+            if is_rgb:
+                p_color = patch['RGB']
+            else:
+                p_color = patch['XYZ']
+            f.write(f"{patch['SAMPLE_ID']} {p_color[0]:.3f} "
+                    f"{p_color[1]:.5f} {p_color[2]:.5f}\n")
 
         f.write('END_DATA\n')
 
-def get_patch_names(cgats_filename):
+def _get_patch_names(cgats_filename):
     """Extract patch names maintaining file order"""
     result = parse_cgats_file(cgats_filename)
-    xyz = []
+    xyz = None
     if 'xyz_target' in result['patches'][0].keys():
-        xyz = result['xyz_target']
+        xyz = [result['xyz_target'] for result in result['patches']]
     elif 'lab_target' in result['patches'][0].keys():
         illuminant_xyz = detect_illuminant_from_patches(result['patches'])
         add_xyz_targets(result['patches'], illuminant_xyz)
         xyz = [result['xyz_target'] for result in result['patches']]
 
-    return [result['patch_id'] for result in result['patches']], xyz
+    return [result['patch_id'] for result in result['patches']], xyz, [str(result.get('sample_loc',0)) for result in result['patches']]
 
 def parse_cgats_file(cgats_filename) -> dict[str: any]:
     """
@@ -224,6 +323,7 @@ def parse_cgats_file(cgats_filename) -> dict[str: any]:
                 # Universal patch ID extraction
                 patch_id = None
                 sample_loc = None
+                path_number = None
 
                 # Search for patch ID using various naming conventions
                 for id_variant in ['SAMPLE_ID', 'Sample_NAME', 'SAMPLE_NAME']:
@@ -385,6 +485,72 @@ import tempfile
 import os
 from PySide6.QtWidgets import QApplication
 
+
+def save_to_cgats_cie_file(data_list: list[dict], metadata: dict, filename: str) -> None:
+    """
+    Creates CGATS.17 CIE file for camera profiling from spectrophotometer data.
+
+    Args:
+        data_list: List of dictionaries containing patch data with:
+                  - lab_reference_m: tuple of (L, A, B) values
+                  - patch_id: patch identifier
+        metadata: Dictionary with metadata for CGATS header
+        filename: Output .cie file name
+    """
+
+    # Validate input data
+    if not data_list:
+        raise ValueError("Data list cannot be empty")
+
+    # Validate LAB data from xicclu
+    for i, item in enumerate(data_list):
+        if 'lab_reference_m' not in item or 'patch_id' not in item:
+            raise ValueError(f"Missing required fields in record {i}")
+
+        lab = item['lab_reference_m']
+        if not isinstance(lab, (tuple, list)) or len(lab) != 3:
+            raise ValueError(f"Invalid LAB data format in record {i}: {lab}")
+
+        L, A, B = lab
+        if not all(isinstance(val, (int, float)) for val in lab):
+            raise ValueError(f"LAB values must be numbers in record {i}: {lab}")
+
+        if not (0 <= L <= 100):
+            raise ValueError(f"L value outside range 0-100 in record {i}: L={L}")
+
+    # Create CGATS file
+    with open(filename, 'w', encoding='utf-8') as f:
+        # CGATS header
+        f.write("CGATS.17\n")
+
+        # Write metadata
+        for key, value in metadata.items():
+            f.write(f'{key} "{value}"\n')
+
+        f.write("\n")
+
+        # Data format section
+        f.write("NUMBER_OF_FIELDS 4\n")
+        f.write("BEGIN_DATA_FORMAT\n")
+        f.write("SAMPLE_ID LAB_L LAB_A LAB_B\n")
+        f.write("END_DATA_FORMAT\n")
+        f.write("\n")
+
+        # Number of records
+        f.write(f"NUMBER_OF_SETS {len(data_list)}\n")
+        f.write("BEGIN_DATA\n")
+
+        # Write patch data (preserve original order!)
+        for item in data_list:
+            patch_id = item['patch_id']
+            L, A, B = item['lab_reference_m']
+
+            # Format LAB values with 5 decimal places
+            f.write(f"{patch_id} {L:.5f} {A:.5f} {B:.5f}\n")
+
+        f.write("END_DATA\n")
+
+
 def run_xicclu_with_background(
         data: List[Dict[str,Any]],
         profile_path: str,
@@ -435,15 +601,15 @@ def run_xicclu_with_background(
             time.sleep(0.15)  # 50ms пауза
 
         for idx, result in enumerate(results):
-            data[idx]['lab_scaner'] = result
+            data[idx]['lab_reference_m'] = result
 
-def update_lab_data(ti3_data: List[Any], path_to_paper_profile:str, input_ti3_file:str) -> None:
+def update_lab_data(ti3_data: List[Any], path_to_paper_profile:str) -> None:
     try:
         temp_fd, temp_filename = tempfile.mkstemp(suffix='.txt', prefix='lab_data_')
         with os.fdopen(temp_fd, 'w') as f:
             for item in ti3_data:
-                x, y, z = item['rgb_reference'][0], item['rgb_reference'][1], item['rgb_reference'][2]
-                f.write(f"{x} {y} {z}\n")
+                r, g, b = item['rgb_reference'][0], item['rgb_reference'][1], item['rgb_reference'][2]
+                f.write(f"{r} {g} {b}\n")
 
         run_xicclu_with_background(
             ti3_data,
@@ -453,6 +619,19 @@ def update_lab_data(ti3_data: List[Any], path_to_paper_profile:str, input_ti3_fi
 
         if os.path.exists(temp_filename):
             os.remove(temp_filename)
+
+    except Exception as e:
+        print(f"Error: int labB: {e}")
+        traceback.print_exc()
+
+def make_lab_data(ti3_data: List[Any], input_ti3_file:str, cht_data) -> None:
+    try:
+        result = analyse_file_format(input_ti3_file)
+
+        for i, item in enumerate(ti3_data):
+            cht_record = cht_data[item['patch_id']]
+            item['lab_reference_m'] =  cht_record['lab_reference']
+            item['xyz_reference_m'] = cht_record['xyz_reference']
 
     except Exception as e:
         print(f"Error: int labB: {e}")

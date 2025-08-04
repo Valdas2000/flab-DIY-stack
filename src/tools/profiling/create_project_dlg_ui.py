@@ -25,8 +25,8 @@ class Ui_CreateProject_dlg(object):
         if not CreateProject_dlg.objectName():
             CreateProject_dlg.setObjectName(u"CreateProject_dlg")
         CreateProject_dlg.setWindowModality(Qt.WindowModality.ApplicationModal)
-        CreateProject_dlg.resize(600, 415)
-        CreateProject_dlg.setMinimumSize(QSize(600, 415))
+        CreateProject_dlg.resize(600, 425)
+        CreateProject_dlg.setMinimumSize(QSize(600, 425))
         CreateProject_dlg.setAutoFillBackground(True)
         self.verticalLayout_3 = QVBoxLayout(CreateProject_dlg)
         self.verticalLayout_3.setObjectName(u"verticalLayout_3")
@@ -36,14 +36,16 @@ class Ui_CreateProject_dlg(object):
         self.gridLayout_2 = QGridLayout(self.groupBox)
         self.gridLayout_2.setObjectName(u"gridLayout_2")
         self.gridLayout_2.setHorizontalSpacing(0)
-        self.gridLayout_2.setContentsMargins(6, 6, 6, 0)
+        self.gridLayout_2.setContentsMargins(6, 2, 6, 9)
         self.edt_project_path = QLineEdit(self.groupBox)
         self.edt_project_path.setObjectName(u"edt_project_path")
+        self.edt_project_path.setMinimumSize(QSize(0, 30))
 
         self.gridLayout_2.addWidget(self.edt_project_path, 0, 0, 1, 1)
 
         self.btn_select_path = QPushButton(self.groupBox)
         self.btn_select_path.setObjectName(u"btn_select_path")
+        self.btn_select_path.setMinimumSize(QSize(0, 30))
 
         self.gridLayout_2.addWidget(self.btn_select_path, 0, 1, 1, 1)
 
@@ -57,41 +59,47 @@ class Ui_CreateProject_dlg(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.tab_create_mode.sizePolicy().hasHeightForWidth())
         self.tab_create_mode.setSizePolicy(sizePolicy)
-        self.tab_create_mode.setMinimumSize(QSize(0, 160))
-        self.tab__new_project = QWidget()
-        self.tab__new_project.setObjectName(u"tab__new_project")
-        self.tab__new_project.setAutoFillBackground(True)
-        self.verticalLayout = QVBoxLayout(self.tab__new_project)
+        self.tab_create_mode.setMinimumSize(QSize(582, 220))
+        self.tab_create_mode.setAutoFillBackground(True)
+        self.tab_create_mode.setTabShape(QTabWidget.TabShape.Triangular)
+        self.tab_new_project = QWidget()
+        self.tab_new_project.setObjectName(u"tab_new_project")
+        self.tab_new_project.setAutoFillBackground(True)
+        self.verticalLayout = QVBoxLayout(self.tab_new_project)
         self.verticalLayout.setObjectName(u"verticalLayout")
-        self.lbl_new_targets_info = QLabel(self.tab__new_project)
+        self.lbl_new_targets_info = QLabel(self.tab_new_project)
         self.lbl_new_targets_info.setObjectName(u"lbl_new_targets_info")
         sizePolicy1 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
         sizePolicy1.setHorizontalStretch(0)
         sizePolicy1.setVerticalStretch(0)
         sizePolicy1.setHeightForWidth(self.lbl_new_targets_info.sizePolicy().hasHeightForWidth())
         self.lbl_new_targets_info.setSizePolicy(sizePolicy1)
+        self.lbl_new_targets_info.setMinimumSize(QSize(0, 52))
         self.lbl_new_targets_info.setMaximumSize(QSize(16777215, 60))
+        self.lbl_new_targets_info.setTextFormat(Qt.TextFormat.MarkdownText)
+        self.lbl_new_targets_info.setAlignment(Qt.AlignmentFlag.AlignLeading|Qt.AlignmentFlag.AlignLeft|Qt.AlignmentFlag.AlignTop)
 
         self.verticalLayout.addWidget(self.lbl_new_targets_info)
 
-        self.gridFrame = QFrame(self.tab__new_project)
-        self.gridFrame.setObjectName(u"gridFrame")
-        self.gridFrame.setAutoFillBackground(True)
-        self.gridLayout_3 = QGridLayout(self.gridFrame)
+        self.frm_new_project = QFrame(self.tab_new_project)
+        self.frm_new_project.setObjectName(u"frm_new_project")
+        self.frm_new_project.setAutoFillBackground(True)
+        self.gridLayout_3 = QGridLayout(self.frm_new_project)
         self.gridLayout_3.setObjectName(u"gridLayout_3")
         self.gridLayout_3.setHorizontalSpacing(6)
         self.gridLayout_3.setVerticalSpacing(7)
-        self.lbl_targen = QLabel(self.gridFrame)
+        self.gridLayout_3.setContentsMargins(-1, -1, -1, 12)
+        self.lbl_targen = QLabel(self.frm_new_project)
         self.lbl_targen.setObjectName(u"lbl_targen")
 
         self.gridLayout_3.addWidget(self.lbl_targen, 3, 0, 1, 1)
 
-        self.lbl_printtarg = QLabel(self.gridFrame)
+        self.lbl_printtarg = QLabel(self.frm_new_project)
         self.lbl_printtarg.setObjectName(u"lbl_printtarg")
 
         self.gridLayout_3.addWidget(self.lbl_printtarg, 5, 0, 1, 1)
 
-        self.printtarg_edit = QLineEdit(self.gridFrame)
+        self.printtarg_edit = QLineEdit(self.frm_new_project)
         self.printtarg_edit.setObjectName(u"printtarg_edit")
         sizePolicy2 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         sizePolicy2.setHorizontalStretch(0)
@@ -102,7 +110,7 @@ class Ui_CreateProject_dlg(object):
 
         self.gridLayout_3.addWidget(self.printtarg_edit, 5, 2, 1, 1)
 
-        self.targen_edit = QLineEdit(self.gridFrame)
+        self.targen_edit = QLineEdit(self.frm_new_project)
         self.targen_edit.setObjectName(u"targen_edit")
         sizePolicy2.setHeightForWidth(self.targen_edit.sizePolicy().hasHeightForWidth())
         self.targen_edit.setSizePolicy(sizePolicy2)
@@ -110,12 +118,12 @@ class Ui_CreateProject_dlg(object):
 
         self.gridLayout_3.addWidget(self.targen_edit, 3, 2, 1, 1)
 
-        self.lbl_template = QLabel(self.gridFrame)
+        self.lbl_template = QLabel(self.frm_new_project)
         self.lbl_template.setObjectName(u"lbl_template")
 
         self.gridLayout_3.addWidget(self.lbl_template, 2, 0, 1, 1)
 
-        self.template_combo = QComboBox(self.gridFrame)
+        self.template_combo = QComboBox(self.frm_new_project)
         self.template_combo.setObjectName(u"template_combo")
         sizePolicy2.setHeightForWidth(self.template_combo.sizePolicy().hasHeightForWidth())
         self.template_combo.setSizePolicy(sizePolicy2)
@@ -124,26 +132,30 @@ class Ui_CreateProject_dlg(object):
         self.gridLayout_3.addWidget(self.template_combo, 2, 2, 1, 1)
 
 
-        self.verticalLayout.addWidget(self.gridFrame)
+        self.verticalLayout.addWidget(self.frm_new_project)
 
-        self.tab_create_mode.addTab(self.tab__new_project, "")
+        self.tab_create_mode.addTab(self.tab_new_project, "")
         self.tab_import_targets = QWidget()
         self.tab_import_targets.setObjectName(u"tab_import_targets")
+        self.tab_import_targets.setMinimumSize(QSize(0, 200))
         self.tab_import_targets.setAutoFillBackground(True)
         self.verticalLayout_4 = QVBoxLayout(self.tab_import_targets)
         self.verticalLayout_4.setObjectName(u"verticalLayout_4")
         self.lbl_import_targets_info = QLabel(self.tab_import_targets)
         self.lbl_import_targets_info.setObjectName(u"lbl_import_targets_info")
+        self.lbl_import_targets_info.setMinimumSize(QSize(0, 45))
+        self.lbl_import_targets_info.setTextFormat(Qt.TextFormat.MarkdownText)
+        self.lbl_import_targets_info.setAlignment(Qt.AlignmentFlag.AlignLeading|Qt.AlignmentFlag.AlignLeft|Qt.AlignmentFlag.AlignTop)
 
         self.verticalLayout_4.addWidget(self.lbl_import_targets_info)
 
-        self.gridFrame1 = QFrame(self.tab_import_targets)
-        self.gridFrame1.setObjectName(u"gridFrame1")
-        self.gridFrame1.setAutoFillBackground(True)
-        self.formLayout_4 = QFormLayout(self.gridFrame1)
+        self.frm_import_targets = QFrame(self.tab_import_targets)
+        self.frm_import_targets.setObjectName(u"frm_import_targets")
+        self.frm_import_targets.setAutoFillBackground(True)
+        self.formLayout_4 = QFormLayout(self.frm_import_targets)
         self.formLayout_4.setObjectName(u"formLayout_4")
         self.formLayout_4.setVerticalSpacing(7)
-        self.btn_select_cht = QPushButton(self.gridFrame1)
+        self.btn_select_cht = QPushButton(self.frm_import_targets)
         self.btn_select_cht.setObjectName(u"btn_select_cht")
         sizePolicy3 = QSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Fixed)
         sizePolicy3.setHorizontalStretch(0)
@@ -154,24 +166,27 @@ class Ui_CreateProject_dlg(object):
 
         self.formLayout_4.setWidget(0, QFormLayout.ItemRole.LabelRole, self.btn_select_cht)
 
-        self.lbl_cht_file = QLabel(self.gridFrame1)
+        self.lbl_cht_file = QLabel(self.frm_import_targets)
         self.lbl_cht_file.setObjectName(u"lbl_cht_file")
+        self.lbl_cht_file.setMinimumSize(QSize(427, 62))
+        self.lbl_cht_file.setAlignment(Qt.AlignmentFlag.AlignLeading|Qt.AlignmentFlag.AlignLeft|Qt.AlignmentFlag.AlignTop)
 
         self.formLayout_4.setWidget(0, QFormLayout.ItemRole.FieldRole, self.lbl_cht_file)
 
-        self.btn_select_ref = QPushButton(self.gridFrame1)
+        self.btn_select_ref = QPushButton(self.frm_import_targets)
         self.btn_select_ref.setObjectName(u"btn_select_ref")
         self.btn_select_ref.setMinimumSize(QSize(100, 30))
 
         self.formLayout_4.setWidget(1, QFormLayout.ItemRole.LabelRole, self.btn_select_ref)
 
-        self.lbl_ref_file = QLabel(self.gridFrame1)
+        self.lbl_ref_file = QLabel(self.frm_import_targets)
         self.lbl_ref_file.setObjectName(u"lbl_ref_file")
+        self.lbl_ref_file.setAlignment(Qt.AlignmentFlag.AlignLeading|Qt.AlignmentFlag.AlignLeft|Qt.AlignmentFlag.AlignTop)
 
         self.formLayout_4.setWidget(1, QFormLayout.ItemRole.FieldRole, self.lbl_ref_file)
 
 
-        self.verticalLayout_4.addWidget(self.gridFrame1)
+        self.verticalLayout_4.addWidget(self.frm_import_targets)
 
         self.tab_create_mode.addTab(self.tab_import_targets, "")
 
@@ -184,19 +199,20 @@ class Ui_CreateProject_dlg(object):
         sizePolicy4.setVerticalStretch(0)
         sizePolicy4.setHeightForWidth(self.wdt_addons.sizePolicy().hasHeightForWidth())
         self.wdt_addons.setSizePolicy(sizePolicy4)
-        self.wdt_addons.setMinimumSize(QSize(528, 50))
+        self.wdt_addons.setMinimumSize(QSize(528, 93))
         self.wdt_addons.setMaximumSize(QSize(16777215, 103))
         self.gridLayout = QGridLayout(self.wdt_addons)
         self.gridLayout.setObjectName(u"gridLayout")
-        self.gridLayout.setContentsMargins(-1, -1, -1, 0)
+        self.gridLayout.setVerticalSpacing(0)
+        self.gridLayout.setContentsMargins(0, 0, 0, 0)
         self.grp_custom_lights = QGroupBox(self.wdt_addons)
         self.grp_custom_lights.setObjectName(u"grp_custom_lights")
         sizePolicy.setHeightForWidth(self.grp_custom_lights.sizePolicy().hasHeightForWidth())
         self.grp_custom_lights.setSizePolicy(sizePolicy)
-        self.grp_custom_lights.setMinimumSize(QSize(260, 50))
+        self.grp_custom_lights.setMinimumSize(QSize(260, 60))
         self.formLayout = QFormLayout(self.grp_custom_lights)
         self.formLayout.setObjectName(u"formLayout")
-        self.formLayout.setContentsMargins(-1, -1, 0, 0)
+        self.formLayout.setContentsMargins(-1, -1, 0, 9)
         self.chk_3000K = QCheckBox(self.grp_custom_lights)
         self.chk_3000K.setObjectName(u"chk_3000K")
 
@@ -224,15 +240,10 @@ class Ui_CreateProject_dlg(object):
         self.formLayout_2 = QFormLayout(self.grp_img_source)
         self.formLayout_2.setObjectName(u"formLayout_2")
         self.formLayout_2.setContentsMargins(12, -1, -1, 0)
-        self.negative_checkbox = QCheckBox(self.grp_img_source)
-        self.negative_checkbox.setObjectName(u"negative_checkbox")
+        self.chk_is_negative = QCheckBox(self.grp_img_source)
+        self.chk_is_negative.setObjectName(u"chk_is_negative")
 
-        self.formLayout_2.setWidget(0, QFormLayout.ItemRole.LabelRole, self.negative_checkbox)
-
-        self.film_checkbox = QCheckBox(self.grp_img_source)
-        self.film_checkbox.setObjectName(u"film_checkbox")
-
-        self.formLayout_2.setWidget(1, QFormLayout.ItemRole.LabelRole, self.film_checkbox)
+        self.formLayout_2.setWidget(0, QFormLayout.ItemRole.LabelRole, self.chk_is_negative)
 
         self.formWidget = QWidget(self.grp_img_source)
         self.formWidget.setObjectName(u"formWidget")
@@ -245,7 +256,7 @@ class Ui_CreateProject_dlg(object):
         self.formLayout_3 = QFormLayout(self.formWidget)
         self.formLayout_3.setObjectName(u"formLayout_3")
 
-        self.formLayout_2.setWidget(2, QFormLayout.ItemRole.SpanningRole, self.formWidget)
+        self.formLayout_2.setWidget(1, QFormLayout.ItemRole.SpanningRole, self.formWidget)
 
 
         self.gridLayout.addWidget(self.grp_img_source, 0, 0, 1, 1)
@@ -289,7 +300,7 @@ class Ui_CreateProject_dlg(object):
 
         self.verticalWidget = QWidget(CreateProject_dlg)
         self.verticalWidget.setObjectName(u"verticalWidget")
-        self.verticalWidget.setMinimumSize(QSize(0, 50))
+        self.verticalWidget.setMinimumSize(QSize(0, 30))
         self.verticalWidget.setMaximumSize(QSize(16777215, 41))
         self.horizontalLayout = QHBoxLayout(self.verticalWidget)
         self.horizontalLayout.setSpacing(0)
@@ -328,7 +339,7 @@ class Ui_CreateProject_dlg(object):
         self.lbl_targen.setText(QCoreApplication.translate("CreateProject_dlg", u"targen", None))
         self.lbl_printtarg.setText(QCoreApplication.translate("CreateProject_dlg", u"printtarg", None))
         self.lbl_template.setText(QCoreApplication.translate("CreateProject_dlg", u"Template", None))
-        self.tab_create_mode.setTabText(self.tab_create_mode.indexOf(self.tab__new_project), QCoreApplication.translate("CreateProject_dlg", u"New Targets", None))
+        self.tab_create_mode.setTabText(self.tab_create_mode.indexOf(self.tab_new_project), QCoreApplication.translate("CreateProject_dlg", u"New Targets", None))
         self.lbl_import_targets_info.setText(QCoreApplication.translate("CreateProject_dlg", u"line1\n"
 "line2\n"
 "line3", None))
@@ -346,8 +357,7 @@ class Ui_CreateProject_dlg(object):
         self.chk_5000K.setText(QCoreApplication.translate("CreateProject_dlg", u"Cool White 5000-5500K", None))
         self.chk_4000K.setText(QCoreApplication.translate("CreateProject_dlg", u"Neutral White 4000-4500K", None))
         self.grp_img_source.setTitle(QCoreApplication.translate("CreateProject_dlg", u"Image Source", None))
-        self.negative_checkbox.setText(QCoreApplication.translate("CreateProject_dlg", u"Negative", None))
-        self.film_checkbox.setText(QCoreApplication.translate("CreateProject_dlg", u"Film", None))
+        self.chk_is_negative.setText(QCoreApplication.translate("CreateProject_dlg", u"Negative Film", None))
         self.grp_output.setTitle(QCoreApplication.translate("CreateProject_dlg", u"Output", None))
         self.chk_ICM.setText(QCoreApplication.translate("CreateProject_dlg", u"ICM", None))
         self.chk_Cine.setText(QCoreApplication.translate("CreateProject_dlg", u"LUT", None))
